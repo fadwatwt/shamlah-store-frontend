@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { getProducts } from '../../lib/queries/products';
 import { Product } from '../../lib/types/saleor';
 import ProductsPageContent from '../components/ProductsPageContent';
@@ -80,5 +81,9 @@ export default async function ProductsPage() {
         ];
     }
 
-    return <ProductsPageContent initialProducts={products} />;
+    return (
+        <Suspense fallback={<div className="min-h-screen pt-32 text-center text-gray-500">Loading products...</div>}>
+            <ProductsPageContent initialProducts={products} />
+        </Suspense>
+    );
 }

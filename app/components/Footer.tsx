@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer() {
-    const { language, setLanguage, t, dir } = useLanguage();
+    const { language, setLanguage, t } = useLanguage();
 
     const sections = [
         {

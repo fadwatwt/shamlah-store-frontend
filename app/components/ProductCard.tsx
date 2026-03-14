@@ -37,9 +37,9 @@ export default function ProductCard({
     variants = [],
     colors = ['#1a1a1a', '#2f3e46', '#79272C'] // Default mock colors matching the image style
 }: ProductCardProps & { colors?: string[] }) {
-    const { language, dir } = useLanguage();
+    const { language } = useLanguage();
     const { toggleWishlist, isInWishlist } = useWishlist();
-    const { addToCart, loading: loadingCart } = useCart();
+    const { addToCart } = useCart();
 
     const [addingToCart, setAddingToCart] = useState(false);
 

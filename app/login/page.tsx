@@ -22,7 +22,7 @@ export default function LoginPage() {
             if (!result.success) {
                 setError(result.error || 'Login failed');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setIsLoggingIn(false);

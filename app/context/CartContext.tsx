@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createCheckout, addLinesToCheckout, getCheckout, updateCheckoutLines, deleteCheckoutLines, CheckoutLineInput, CheckoutLineUpdateInput } from '@/lib/queries/cart';
+import { createCheckout, addLinesToCheckout, getCheckout, updateCheckoutLines, deleteCheckoutLines } from '@/lib/queries/cart';
 
 interface CartContextType {
     checkoutId: string | null;

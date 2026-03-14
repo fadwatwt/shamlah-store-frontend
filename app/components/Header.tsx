@@ -11,7 +11,7 @@ import { useCart } from '../context/CartContext';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { language, t, dir } = useLanguage();
-  const { categories, loading } = useCategories(language === 'ar' ? 'AR' : 'EN');
+  const { categories } = useCategories(language === 'ar' ? 'AR' : 'EN');
   const { items: wishlistItems } = useWishlist();
   const { cartCount } = useCart();
 

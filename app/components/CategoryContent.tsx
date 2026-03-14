@@ -30,7 +30,7 @@ interface CategoryContentProps {
 }
 
 export default function CategoryContent({ category, initialProducts, channel }: CategoryContentProps) {
-    const { t, dir, language } = useLanguage();
+    const { dir, language } = useLanguage();
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     const categoryName = category.translation?.name || category.name;

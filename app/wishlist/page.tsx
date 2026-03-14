@@ -7,8 +7,8 @@ import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/ProductCard';
 
 export default function WishlistPage() {
-    const { t, dir, language } = useLanguage();
-    const { items: wishlistItems, removeFromWishlist } = useWishlist();
+    const { t, dir } = useLanguage();
+    const { items: wishlistItems } = useWishlist();
 
     return (
         <main className="min-h-screen pt-32 pb-20 bg-white md:px-24" dir={dir}>

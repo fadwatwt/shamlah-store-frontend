@@ -52,7 +52,7 @@ export default function RegisterPage() {
                 setPassword('');
                 setConfirmPassword('');
             }
-        } catch (err) {
+        } catch {
             setError(dir === 'rtl' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');
         } finally {
             setIsRegistering(false);

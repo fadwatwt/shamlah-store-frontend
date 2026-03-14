@@ -43,7 +43,6 @@ export default function CartPage() {
                             items.map((line) => {
                                 const products = line.variant?.product;
                                 const price = line.variant?.pricing?.price?.gross?.amount || 0;
-                                const lineTotal = price * line.quantity;
                                 const image = products?.thumbnail?.url || 'https://placehold.co/100x100?text=No+Image';
                                 const name = products?.name || 'Unknown Product';
                                 // Attributes can be finding in variant.attributes or product.attributes if needed

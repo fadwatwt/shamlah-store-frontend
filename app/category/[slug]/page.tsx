@@ -46,7 +46,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             <main className="pt-32 pb-24 px-6 min-h-screen md:px-24">
                 <div className="container mx-auto text-center">
                     <h1 className="text-3xl font-bold text-accent mb-4">Category Not Found</h1>
-                    <p className="text-gray-600">The category you're looking for doesn't exist.</p>
+                    <p className="text-gray-600">The category you&apos;re looking for doesn&apos;t exist.</p>
                 </div>
             </main>
         );

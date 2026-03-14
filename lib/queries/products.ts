@@ -127,7 +127,7 @@ async function getActiveChannel(providedChannel?: string): Promise<string> {
     return providedChannel;
   }
 
-  if (envChannel && envChannel !== 'default-channel') {
+  if (envChannel) {
     return envChannel;
   }
 
@@ -444,7 +444,7 @@ export async function getProductsByCategoryIds(
   try {
     const activeChannel = await getActiveChannel(channel);
 
-    let filterInput: any = {};
+    const filterInput: any = {};
 
     if (Array.isArray(filters)) {
       // Handle legacy array argument

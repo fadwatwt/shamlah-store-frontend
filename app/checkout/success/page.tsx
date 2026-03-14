@@ -3,21 +3,23 @@
 import Link from 'next/link';
 import { useLanguage } from '../../context/LanguageContext';
 import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+
+
+
+// Static mock order data for purity
+const ORDER_STATIC_DATA = {
+    number: 'SHM-842915',
+    date: 'March 14, 2026',
+    address: 'Palestinian Territories, Gaza, Rimal St, Bldg 45',
+    paymentMethod: { ar: 'بطاقة ائتمان', en: 'Credit Card' }
+};
 
 export default function SuccessPage() {
     const { t, dir, language } = useLanguage();
 
-    // Mock order data
     const orderData = {
-        number: 'SHM-' + Math.floor(100000 + Math.random() * 900000),
-        date: new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        }),
-        address: 'Palestinian Territories, Gaza, Rimal St, Bldg 45',
-        paymentMethod: language === 'ar' ? 'بطاقة ائتمان' : 'Credit Card'
+        ...ORDER_STATIC_DATA,
+        paymentMethod: ORDER_STATIC_DATA.paymentMethod[language as 'ar' | 'en'] || ORDER_STATIC_DATA.paymentMethod.en
     };
 
     return (

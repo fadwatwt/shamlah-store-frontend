@@ -26,7 +26,7 @@ interface ProductsPageContentProps {
 }
 
 export default function ProductsPageContent({ initialProducts }: ProductsPageContentProps) {
-    const { t, dir, language } = useLanguage();
+    const { dir, language } = useLanguage();
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
     return (

@@ -11,7 +11,7 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug }: FilterSidebarProps) {
-    const { t, language } = useLanguage();
+    const { language } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -111,7 +111,6 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
     };
 
     const clearAll = () => {
-        const params = new URLSearchParams();
         router.push(window.location.pathname, { scroll: false });
     };
 
