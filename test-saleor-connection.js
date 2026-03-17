@@ -1,7 +1,9 @@
-// Test script to check Saleor GraphQL API connection
 const { GraphQLClient } = require('graphql-request');
 
-const client = new GraphQLClient('https://saleor-backend-qu0p.onrender.com/graphql/', {
+// Use the production Render URL
+const endpoint = 'https://saleor-backend-qu0p.onrender.com/graphql/';
+
+const client = new GraphQLClient(endpoint, {
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,7 +36,7 @@ const GET_CATEGORIES = `
 async function testConnection() {
   try {
     console.log('Testing connection to Saleor GraphQL API...');
-    console.log('URL: https://saleor-backend-qu0p.onrender.com/graphql/');
+    console.log(`URL: ${endpoint}`);
 
     const data = await client.request(GET_CATEGORIES);
 
@@ -58,13 +60,6 @@ async function testConnection() {
     console.error('\n❌ Connection failed:');
     console.error('Error message:', error.message);
     console.error('Error code:', error.code);
-
-    if (error.code === 'ECONNREFUSED') {
-      console.error('\n⚠️  Saleor backend is not running!');
-      console.error('Please make sure Docker containers are running with:');
-      console.error('  cd d:\\Company\\store\\saleor-platform-backend');
-      console.error('  docker compose up');
-    }
   }
 }
 
