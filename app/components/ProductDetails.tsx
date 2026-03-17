@@ -243,6 +243,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 fill
                                 className="object-cover"
                                 priority
+                                unoptimized={selectedImage.startsWith('http://localhost:8000') || selectedImage.includes('onrender.com')}
                             />
                         </div>
                         {/* Thumbnails */}
@@ -253,7 +254,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     onClick={() => setSelectedImage(img)}
                                     className={`relative w-24 h-24 flex-shrink-0 border-2 rounded-md overflow-hidden transition-all ${selectedImage === img ? 'border-accent' : 'border-transparent'}`}
                                 >
-                                    <Image src={img} alt={`Thumbnail ${idx}`} fill className="object-cover" />
+                                    <Image
+                                        src={img}
+                                        alt={`Thumbnail ${idx}`}
+                                        fill
+                                        className="object-cover"
+                                        unoptimized={img.startsWith('http://localhost:8000') || img.includes('onrender.com')}
+                                    />
                                 </button>
                             ))}
                         </div>

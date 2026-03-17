@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         hostname: 'notion-slate-68267874.figma.site',
       },
       {
+        protocol: 'https',
+        hostname: 'saleor-backend-qu0p.onrender.com',
+        pathname: '/**',
+      },
+      {
         protocol: 'http',
         hostname: 'localhost',
         port: '8000',

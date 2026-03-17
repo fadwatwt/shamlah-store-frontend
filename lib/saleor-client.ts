@@ -1,7 +1,7 @@
 import { GraphQLClient } from 'graphql-request';
 
 const getSaleorApiUrl = () => {
-  return process.env.NEXT_PUBLIC_SALEOR_API_URL || 'http://localhost:8000/graphql/';
+  return process.env.NEXT_PUBLIC_SALEOR_API_URL || 'https://saleor-backend-qu0p.onrender.com/graphql/';
 };
 
 export const saleorClient = new GraphQLClient(getSaleorApiUrl(), {
