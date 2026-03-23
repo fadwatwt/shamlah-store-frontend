@@ -1,5 +1,5 @@
-import { getProductById } from '../../../lib/queries/products';
-import { notFound } from 'next/navigation';
+import { getProductById } from '@/lib/queries/products';
+import { notFound } from "next/navigation";
 import ProductDetails from '../../components/ProductDetails';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {

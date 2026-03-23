@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
-import { getProducts } from '../../lib/queries/products';
-import { Product } from '../../lib/types/saleor';
+import { getProducts } from '@/lib/queries/products';
+import { Product } from '@/lib/types/saleor';
 import ProductsPageContent from '../components/ProductsPageContent';
 
 function transformSaleorProduct(product: Product) {
