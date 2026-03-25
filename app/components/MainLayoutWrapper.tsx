@@ -6,7 +6,7 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   // Check if the current route is the story page
-  const isStoryPage = pathname === '/story' || pathname?.startsWith('/story/') || '/' || pathname?.startsWith('/');
+  const isStoryPage = pathname === '/story' || pathname?.startsWith('/story/') || pathname === '/';
 
   return (
     <div className={isStoryPage ? '' : 'px-16'}>
