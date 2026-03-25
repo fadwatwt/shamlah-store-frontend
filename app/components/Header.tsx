@@ -54,7 +54,7 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 smooth-transition ${isScrolled ? 'bg-background shadow-md' : 'bg-background/90 backdrop-blur-sm'
+      className={`fixed top-0 left-0 right-0 z-50 px-16 smooth-transition ${isScrolled ? 'bg-background shadow-md' : 'bg-background/90 backdrop-blur-sm'
         }`}
       dir={dir}
     >

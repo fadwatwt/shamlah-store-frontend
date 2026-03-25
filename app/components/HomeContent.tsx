@@ -57,7 +57,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                 </div>
 
                 <div className="relative z-10 text-center h-full flex flex-col justify-center items-center text-white px-6 mt-16">
-                    <p className="text-3xl md:text-5xl mb-4 leading-tight font-serif tracking-wide">
+                    <p className="text-lg md:text-xl mb-4 leading-tight font-serif tracking-wide">
                         {t.home.heroTitle}
                     </p>
                     <p className="text-lg md:text-xl font-light tracking-wider">

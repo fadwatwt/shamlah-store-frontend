@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Mada } from "next/font/google";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import MainLayoutWrapper from "./components/MainLayoutWrapper";
 import { LanguageProvider } from "./context/LanguageContext";
 import { WishlistProvider } from "./context/WishlistContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -34,7 +35,9 @@ export default function RootLayout({
               <CartProvider>
                 <div className="bg-background">
                   <Header />
-                  {children}
+                  <MainLayoutWrapper>
+                    {children}
+                  </MainLayoutWrapper>
                   <Footer />
                 </div>
               </CartProvider>

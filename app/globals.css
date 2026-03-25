@@ -44,11 +44,11 @@ body {
 }
 
 /* Language specific font overrides */
-.font-sans-ar {
+.font-sans-ar, .font-arabic {
     font-family: var(--font-ar);
 }
 
-.font-sans-en {
+.font-sans-en, .font-english {
     font-family: var(--font-en);
 }
 

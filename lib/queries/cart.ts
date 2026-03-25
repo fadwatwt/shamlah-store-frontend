@@ -28,6 +28,12 @@ export const CHECKOUT_CREATE = gql`
             }
           }
         }
+        totalPrice {
+          gross {
+            amount
+            currency
+          }
+        }
       }
       errors {
         field

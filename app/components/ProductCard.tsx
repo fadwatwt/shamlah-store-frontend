@@ -216,7 +216,7 @@ export default function ProductCard({
                     </div> */}
 
                     {/* Product Name */}
-                    <h3 className="text-lg font-medium  mb-2 text-gray-800 group-hover:text-accent smooth-transition">
+                    <h3 className="text-lg font-medium text-center  mb-2 text-gray-800 group-hover:text-accent smooth-transition">
                         {name}
                     </h3>
 
