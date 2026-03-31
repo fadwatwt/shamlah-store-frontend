@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Mada } from "next/font/google";
+import localFont from "next/font/local";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import MainLayoutWrapper from "./components/MainLayoutWrapper";
@@ -9,9 +9,19 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import "./globals.css";
 
-const mada = Mada({
-  subsets: ["arabic", "latin"],
-  weight: ["200", "300", "400", "500", "600", "700", "900"],
+const sfMada = localFont({
+  src: [
+    {
+      path: "../public/fonts/SFMada.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/SFMada-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
   variable: "--font-main",
   display: "swap",
 });
@@ -28,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${mada.variable} antialiased`}>
+      <body className={`${sfMada.variable} antialiased`}>
         <LanguageProvider>
           <WishlistProvider>
             <AuthProvider>

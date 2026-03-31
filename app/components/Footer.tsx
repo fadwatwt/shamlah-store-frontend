@@ -113,21 +113,23 @@ export default function Footer() {
                             </button>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute bottom-full mb-2 end-0 bg-white shadow-xl border border-gray-100 rounded-lg min-w-[150px] overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 smooth-transition z-50">
-                                <button
-                                    onClick={() => setLanguage('en')}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'en' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
-                                >
-                                    <span className="text-xs text-gray-400 w-4">US</span>
-                                    <span>English</span>
-                                </button>
-                                <button
-                                    onClick={() => setLanguage('ar')}
-                                    className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'ar' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
-                                >
-                                    <span className="text-xs text-gray-400 w-4">PS</span>
-                                    <span className="font-arabic">العربية</span>
-                                </button>
+                            <div className="absolute bottom-full end-0 pb-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 smooth-transition">
+                                <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[150px] overflow-hidden">
+                                    <button
+                                        onClick={() => setLanguage('en')}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'en' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
+                                    >
+                                        <span className="text-xs text-gray-400 w-4">US</span>
+                                        <span>English</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setLanguage('ar')}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'ar' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
+                                    >
+                                        <span className="text-xs text-gray-400 w-4">PS</span>
+                                        <span className="font-arabic">العربية</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

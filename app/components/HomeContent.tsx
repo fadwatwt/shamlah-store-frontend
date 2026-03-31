@@ -85,7 +85,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         />
                     </div>
                     <h2 className="text-3xl md:text-4xl font-serif text-accent mb-6 leading-relaxed">
-                        From the fabric of the land, to Humanity
+                        {language === 'ar' ? 'من نسيج الأرض، إلى الإنسانية' : 'From the fabric of the land, to Humanity'}
                     </h2>
                     <p className="text-gray-600 text-lg md:text-xl leading-loose font-light max-w-3xl mx-auto">
                         {language === 'ar'
