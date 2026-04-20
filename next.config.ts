@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'saleor-backend-qu0p.onrender.com',
+        hostname: 'shamlh-dashboard.duckdns.org/graphql/',
         pathname: '/**',
       },
       {
