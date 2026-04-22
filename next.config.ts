@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'shamlh-dashboard.duckdns.org', // تم حذف /graphql/ من هنا
+        hostname: 'shamlh-backend.duckdns.org', // تم حذف /graphql/ من هنا
         pathname: '/**',
       },
       {
