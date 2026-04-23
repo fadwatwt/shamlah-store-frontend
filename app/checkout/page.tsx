@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
+import { updateCheckoutShippingAddress, updateCheckoutShippingMethod, getCheckout } from '@/lib/queries/cart';
+import { getShopShippingMethods } from '@/lib/queries/shop';
+import { LoadingOverlay } from '../components/LoadingSpinner';
 import Header from '../components/Header';
 
 // SVGs
@@ -46,9 +49,14 @@ const CardIcon = ({ className = "w-5 h-5 text-accent" }: { className?: string })
 
 export default function CheckoutPage() {
     const { t, dir, language } = useLanguage();
-    const { items, subtotal } = useCart();
+    const { items, subtotal, checkoutToken } = useCart();
     const [step, setStep] = useState(1);
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
+    const [availableShippingMethods, setAvailableShippingMethods] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [dynamicSubtotal, setDynamicSubtotal] = useState(subtotal);
+    const [dynamicShippingPrice, setDynamicShippingPrice] = useState(0);
+    const [dynamicTotal, setDynamicTotal] = useState(0);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -72,6 +80,22 @@ export default function CheckoutPage() {
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showErrors, setShowErrors] = useState(false);
+
+    // Pre-load shipping methods from shop query
+    useEffect(() => {
+        const loadInitialShipping = async () => {
+            const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
+            const methods = await getShopShippingMethods(channel);
+            if (methods.length > 0) {
+                setAvailableShippingMethods(methods);
+                const firstMethod = methods[0];
+                setShippingMethod(firstMethod.id);
+                setDynamicShippingPrice(firstMethod.price.amount);
+                setDynamicTotal((subtotal?.amount || 0) + firstMethod.price.amount);
+            }
+        };
+        loadInitialShipping();
+    }, [subtotal?.amount]);
 
     const validateStep1 = () => {
         const newErrors: Record<string, string> = {};
@@ -102,11 +126,68 @@ export default function CheckoutPage() {
         return true;
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
         setShowErrors(true);
         if (validateStep1()) {
-            setStep(2);
-            setShowErrors(false);
+            if (!checkoutToken) {
+                alert('No checkout session found.');
+                return;
+            }
+
+            setLoading(true);
+            try {
+                // Map frontend form to Saleor AddressInput
+                const addressInput = {
+                    firstName: formData.fullName.split(' ')[0],
+                    lastName: formData.fullName.split(' ').slice(1).join(' ') || 'User',
+                    streetAddress1: formData.address,
+                    city: formData.city,
+                    postalCode: formData.zipCode || '00000',
+                    country: formData.country as any || 'PS', // Default to Palestine if empty
+                    phone: formData.phone
+                };
+
+                const data = await updateCheckoutShippingAddress(checkoutToken, addressInput);
+                if (data.checkoutShippingAddressUpdate?.errors?.length > 0) {
+                    console.error('Shipping address update errors:', data.checkoutShippingAddressUpdate.errors);
+                    setErrors({ general: data.checkoutShippingAddressUpdate.errors[0].message });
+                    return;
+                }
+
+                const methods = data.checkoutShippingAddressUpdate?.checkout?.availableShippingMethods || [];
+                setAvailableShippingMethods(methods);
+                
+                if (methods.length > 0) {
+                    setShippingMethod(methods[0].id);
+                    // Update shipping method on server for the first one automatically
+                    await handleShippingMethodSelect(methods[0].id);
+                }
+
+                setStep(2);
+                setShowErrors(false);
+            } catch (err) {
+                console.error('Failed to update shipping address:', err);
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const handleShippingMethodSelect = async (methodId: string) => {
+        if (!checkoutToken) return;
+        setShippingMethod(methodId);
+        setLoading(true);
+        try {
+            const data = await updateCheckoutShippingMethod(checkoutToken, methodId);
+            if (data.checkoutShippingMethodUpdate?.checkout) {
+                const checkout = data.checkoutShippingMethodUpdate.checkout;
+                setDynamicTotal(checkout.totalPrice.gross.amount);
+                setDynamicShippingPrice(checkout.shippingPrice?.gross?.amount || 0);
+            }
+        } catch (err) {
+            console.error('Failed to update shipping method:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -123,18 +204,14 @@ export default function CheckoutPage() {
         }
     };
 
-    const shippingCosts: Record<string, number> = {
-        standard: 25,
-        express: 45,
-        overnight: 65
-    };
-
-    const shippingPrice = shippingCosts[shippingMethod] || 0;
-    const total = (subtotal?.amount || 0) + shippingPrice;
-    const currency = subtotal?.currency || (language === 'ar' ? 'ر.س' : 'SAR');
+    // Fallback if not updated by dynamic fetch yet
+    const displayShippingPrice = dynamicShippingPrice || 0;
+    const total = dynamicTotal || (subtotal?.amount || 0);
+    const currency = t.common.currency;
 
     return (
         <div className="min-h-screen bg-background" dir={dir}>
+            {loading && <LoadingOverlay />}
             <Header />
 
             <main className="pt-32 pb-20 px-4">
@@ -181,7 +258,7 @@ export default function CheckoutPage() {
                                 <span className="text-[17px]">{t.cart.summary}</span>
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="font-bold text-accent" dir="ltr">{currency} {total}</span>
+                                <span className="font-bold text-accent">{total} {currency}</span>
                                 <svg className={`w-5 h-5 text-gray-400 transition-transform duration-500 ${isOrderSummaryOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -207,8 +284,8 @@ export default function CheckoutPage() {
                                             <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{item.variant?.product?.name}</h4>
                                             <p className="text-xs text-gray-500 mt-1">{item.variant?.name !== item.variant?.id ? item.variant?.name : ''}</p>
                                         </div>
-                                        <div className="text-sm font-bold text-gray-900" dir="ltr">
-                                            {currency} {item.variant?.pricing?.price?.gross?.amount || 0}
+                                        <div className="text-sm font-bold text-gray-900">
+                                            {item.variant?.pricing?.price?.gross?.amount || 0} {currency}
                                         </div>
                                     </div>
                                 )) : (
@@ -218,15 +295,15 @@ export default function CheckoutPage() {
                                 <div className="border-t border-gray-100 pt-5 mt-4 space-y-3">
                                     <div className="flex justify-between text-sm text-gray-500">
                                         <span>{t.cart.subtotal}</span>
-                                        <span dir="ltr">{currency} {subtotal?.amount || 0}</span>
+                                        <span>{subtotal?.amount || 0} {currency}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-500">
                                         <span>{t.cart.shipping}</span>
-                                        <span dir="ltr">{currency} {shippingPrice}</span>
+                                        <span>{displayShippingPrice} {currency}</span>
                                     </div>
                                     <div className="flex justify-between text-xl font-bold text-accent pt-2">
                                         <span>{t.cart.total}</span>
-                                        <span dir="ltr">{currency} {total}</span>
+                                        <span>{total} {currency}</span>
                                     </div>
                                 </div>
                             </div>
@@ -349,9 +426,10 @@ export default function CheckoutPage() {
 
                                 <button
                                     onClick={handleNext}
-                                    className="w-full bg-accent text-white py-4 font-bold text-lg hover:bg-[#500000] smooth-transition shadow-xl shadow-accent/20 mt-10"
+                                    disabled={loading}
+                                    className="w-full bg-accent text-white py-4 font-bold text-lg hover:bg-[#500000] smooth-transition shadow-xl shadow-accent/20 mt-10 disabled:opacity-50"
                                 >
-                                    {t.checkout.continueToPayment}
+                                    {loading ? (language === 'ar' ? 'جاري التحميل...' : 'Loading...') : t.checkout.continueToPayment}
                                 </button>
                             </div>
                         </>
@@ -365,11 +443,7 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {[
-                                        { id: 'standard', title: t.checkout.shippingMethods.standard, time: '3-5', price: 25 },
-                                        { id: 'express', title: t.checkout.shippingMethods.express, time: '1-2', price: 45 },
-                                        { id: 'overnight', title: t.checkout.shippingMethods.overnight, time: '24', price: 65 }
-                                    ].map((method) => (
+                                    {availableShippingMethods.length > 0 ? availableShippingMethods.map((method) => (
                                         <label
                                             key={method.id}
                                             className={`flex items-center justify-between p-5 rounded-lg border-2 cursor-pointer transition-all ${shippingMethod === method.id ? 'border-accent bg-accent/5' : 'border-gray-100 hover:border-gray-200 bg-white'}`}
@@ -379,17 +453,21 @@ export default function CheckoutPage() {
                                                     type="radio"
                                                     name="shipping"
                                                     checked={shippingMethod === method.id}
-                                                    onChange={() => setShippingMethod(method.id)}
+                                                    onChange={() => handleShippingMethodSelect(method.id)}
                                                     className="w-5 h-5 accent-accent"
                                                 />
                                                 <div>
-                                                    <p className="font-semibold text-gray-900">{method.title}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{method.time} {t.checkout.shippingMethods.days}</p>
+                                                    <p className="font-semibold text-gray-900">{method.name}</p>
+                                                    <p className="text-xs text-gray-500 mt-0.5">{language === 'ar' ? 'شحن من البورصة' : 'Standard Delivery'}</p>
                                                 </div>
                                             </div>
-                                            <span className="font-bold text-gray-900" dir="ltr">{currency} {method.price}</span>
+                                            <span className="font-bold text-gray-900">{method.price.amount} {currency}</span>
                                         </label>
-                                    ))}
+                                    )) : (
+                                        <p className="text-gray-500 text-sm py-4 italic">
+                                            {language === 'ar' ? 'لا توجد طرق شحن متاحة لهذه المنطقة' : 'No shipping methods available for this region'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 

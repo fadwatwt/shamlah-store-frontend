@@ -20,6 +20,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const savedLang = localStorage.getItem('language') as Language;
         if (savedLang && (savedLang === 'ar' || savedLang === 'en')) {
             setLanguageState(savedLang);
+            document.cookie = `language=${savedLang};path=/;max-age=${60 * 60 * 24 * 30}`; // 30 days
         }
         setMounted(true);
     }, []);
@@ -27,8 +28,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const setLanguage = (lang: Language) => {
         setLanguageState(lang);
         localStorage.setItem('language', lang);
+        document.cookie = `language=${lang};path=/;max-age=${60 * 60 * 24 * 30}`; // 30 days
         document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
         document.documentElement.lang = lang;
+        window.location.reload();
     };
 
     // Update direction on mount/change

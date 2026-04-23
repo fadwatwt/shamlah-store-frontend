@@ -4,18 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
+import { LoadingOverlay } from '../components/LoadingSpinner';
 
 export default function CartPage() {
     const { t, dir, language } = useLanguage();
-    const { items, loading, updateLineQuantity, removeFromCart, subtotal } = useCart();
+    const { items, loading, updateLineQuantity, removeFromCart, subtotal, shippingPrice, totalPrice } = useCart();
 
-    // Map Saleor items to UI structure if needed, or use directly
-    // Saleor Item Structure:
-    // { id, quantity, variant: { product: { name, thumbnail: { url } }, pricing: { price: { gross: { amount } } } } }
-
-    const shipping = 0; // Calculated based on rules usually, defaulting to 0 or fixed for now
-    const total = (subtotal?.amount || 0) + shipping;
-    const currency = subtotal?.currency || 'USD';
+    const displayShipping = shippingPrice?.amount || 0;
+    const total = totalPrice?.amount || (subtotal?.amount || 0);
+    const currency = t.common.currency;
 
     if (loading && items.length === 0) {
         return (
@@ -29,6 +26,7 @@ export default function CartPage() {
 
     return (
         <main className="min-h-screen pt-32 pb-20 px-4 md:px-24" dir={dir}>
+            {loading && <LoadingOverlay />}
             <div className="container mx-auto px-6 lg:px-12">
                 {/* Page Title */}
                 <div className="text-center mb-16">
@@ -65,8 +63,8 @@ export default function CartPage() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-bold text-lg text-gray-800">{name}</h3>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-gray-900" dir="ltr">{currency} {price}</div>
-                                                    {/* <div className="text-xs text-gray-500">Total: {currency} {lineTotal}</div> */}
+                                                    <div className="font-bold text-gray-900">{price} {t.common.currency}</div>
+                                                    {/* <div className="text-xs text-gray-500">Total: {price * line.quantity} {t.common.currency}</div> */}
                                                 </div>
                                             </div>
                                             {/* Variant Name (Size/Color) */}
@@ -128,16 +126,16 @@ export default function CartPage() {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between text-gray-600">
                                     <span>{t.cart.subtotal}</span>
-                                    <span className={language === 'ar' ? 'font-english' : ''} dir="ltr">{currency} {subtotal?.amount || 0}</span>
+                                    <span>{(subtotal?.amount || 0)} {t.common.currency}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-600">
                                     <span>{t.cart.shipping}</span>
-                                    <span className={language === 'ar' ? 'font-english' : ''} dir="ltr">{shipping > 0 ? `${currency} ${shipping}` : (language === 'ar' ? 'مجاني' : 'Free')}</span>
+                                    <span>{displayShipping > 0 ? `${displayShipping} ${t.common.currency}` : (language === 'ar' ? 'مجاني' : 'Free')}</span>
                                 </div>
                                 <div className="border-t border-gray-200 pt-4 mt-4">
                                     <div className="flex justify-between text-xl font-bold text-accent">
                                         <span>{t.cart.total}</span>
-                                        <span className={language === 'ar' ? 'font-english' : ''} dir="ltr">{currency} {total}</span>
+                                        <span>{total} {t.common.currency}</span>
                                     </div>
                                 </div>
                             </div>

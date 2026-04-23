@@ -11,7 +11,7 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug }: FilterSidebarProps) {
-    const { language } = useLanguage();
+    const { language, t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -29,7 +29,11 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         sizes: isBags
             ? ['small', 'medium', 'large']
             : ['xs', 's', 'm', 'l', 'xl', 'xxl'],
-        genders: ['women', 'men', 'unisex'],
+        genders: [
+            { id: 'man', name: { en: 'Men', ar: 'رجالي' } },
+            { id: 'woman', name: { en: 'Women', ar: 'نسائي' } },
+            { id: 'unisex', name: { en: 'Unisex', ar: 'لكلا الجنسين' } },
+        ],
         features: [
             // Common
             { id: 'lightweight', name: { en: 'Lightweight', ar: 'خفيف الوزن' } },
@@ -120,16 +124,22 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
 
     // Helper to render size label
     const renderSizeLabel = (size: string) => {
-        if (language === 'ar' && isBags) {
-            switch (size) {
+        if (language === 'ar') {
+            switch (size.toLowerCase()) {
                 case 'small': return 'صغير';
                 case 'medium': return 'وسط';
                 case 'large': return 'كبير';
+                case 'xs': return 'XS';
+                case 's': return 'S';
+                case 'm': return 'M';
+                case 'l': return 'L';
+                case 'xl': return 'XL';
+                case 'xxl': return 'XXL';
                 default: return size.toUpperCase();
             }
         }
         // Capitalize specific bag sizes, uppercase otherwise (for clothing codes like XS, S, M)
-        if (isBags) {
+        if (isBags || ['small', 'medium', 'large'].includes(size.toLowerCase())) {
             return size.charAt(0).toUpperCase() + size.slice(1);
         }
         return size.toUpperCase();
@@ -201,7 +211,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         <div>
                             <div className="flex items-center gap-4 mb-3">
                                 <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
                                     <input
                                         type="number"
                                         placeholder="Min"
@@ -209,12 +219,12 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                         onChange={(e) => setPriceMin(e.target.value)}
                                         onKeyDown={handlePriceKeyDown}
                                         onBlur={updatePrice}
-                                        className="w-full pl-6 pr-3 py-2 border border-gray-300 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                                        className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                                     />
                                 </div>
                                 <span className="text-gray-400">-</span>
                                 <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
                                     <input
                                         type="number"
                                         placeholder="Max"
@@ -222,7 +232,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                         onChange={(e) => setPriceMax(e.target.value)}
                                         onKeyDown={handlePriceKeyDown}
                                         onBlur={updatePrice}
-                                        className="w-full pl-6 pr-3 py-2 border border-gray-300 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                                        className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                                     />
                                 </div>
                             </div>
@@ -307,16 +317,18 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                     {expandedSections.gender && (
                         <div className="space-y-3">
                             {filters.genders.map((item) => {
-                                const value = `attribute:gender:${item}`;
+                                const value = `attribute:sex:${item.id}`;
                                 return (
-                                    <label key={item} className="flex items-center gap-3 cursor-pointer group">
+                                    <label key={item.id} className="flex items-center gap-3 cursor-pointer group">
                                         <input
                                             type="checkbox"
                                             checked={isChecked('attributes', value)}
                                             onChange={(e) => updateFilter('attributes', value, e.target.checked)}
                                             className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
                                         />
-                                        <span className="text-gray-600 group-hover:text-accent transition-colors">{item}</span>
+                                        <span className="text-gray-600 group-hover:text-accent transition-colors">
+                                            {language === 'ar' ? item.name.ar : item.name.en}
+                                        </span>
                                     </label>
                                 );
                             })}

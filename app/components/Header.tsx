@@ -25,11 +25,25 @@ export default function Header() {
 
   // Map Saleor categories to nav structure
   const navLinks = categories.map(category => {
-    const categoryName = category.translation?.name || category.name;
-    const children = category.children?.edges?.map(edge => ({
-      href: `/category/${edge.node.slug}`,
-      label: edge.node.translation?.name || edge.node.name,
-    })) || [];
+    // Try API translation, then local translation fallback, then raw name
+    const localNav = t.nav as any;
+    const fallbackName = localNav[category.name.toLowerCase()] ||
+      localNav[category.slug.toLowerCase()] ||
+      (category.name.toLowerCase() === 'clothing' ? t.nav.clothes : null);
+
+    const categoryName = category.translation?.name || fallbackName || category.name;
+
+    const children = category.children?.edges?.map(edge => {
+      const childName = edge.node.translation?.name ||
+        localNav[edge.node.name.toLowerCase()] ||
+        localNav[edge.node.slug.toLowerCase()] ||
+        edge.node.name;
+
+      return {
+        href: `/category/${edge.node.slug}`,
+        label: childName,
+      };
+    }) || [];
 
     // Add "View All" as first item if there are children
     if (children.length > 0) {

@@ -61,7 +61,7 @@ export default function CategoryContent({ category, initialProducts, channel }: 
                 </div>
 
                 {/* Toolbar (Filter Toggle & Sort) */}
-                <div className="flex flex-wrap items-center justify-between border-b border-gray-200 pb-4 mb-8">
+                <div className="flex flex-wrap items-center border-b border-gray-200 pb-4 mb-8">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}

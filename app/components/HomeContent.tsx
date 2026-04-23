@@ -14,9 +14,22 @@ interface HomeContentProps {
 export default function HomeContent({ bestSellers, categories: saleorCategories }: HomeContentProps) {
     const { t, dir, language } = useLanguage();
 
+    // Debugging: Log categories to see if backgroundImage exists
+    console.log('Categories from Saleor:', saleorCategories);
+
+    // Fetch images strictly from Saleor category data
     const getCategoryImage = (slug: string) => {
-        const category = saleorCategories.find(c => c.slug === slug);
-        return category?.backgroundImage?.url || `https://placehold.co/600x800/79272C/white?text=${slug}`;
+        const category = saleorCategories.find(c => 
+            c.slug?.toLowerCase() === slug.toLowerCase() || 
+            c.name?.toLowerCase() === slug.toLowerCase()
+        );
+        
+        if (category?.backgroundImage?.url) {
+            return category.backgroundImage.url;
+        }
+        
+        // Return a generic placeholder only if Saleor data is missing
+        return `https://placehold.co/600x800/eeeeee/999999?text=Set+Image+in+Saleor+(${slug})`;
     };
 
     const displayCategories = [
@@ -29,7 +42,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
         {
             title: t.home.categories.clothes.title,
             subtitle: t.home.categories.clothes.subtitle,
-            image: getCategoryImage('clothing'), // Slugs often differ, assuming 'clothing' for clothes
+            image: getCategoryImage('clothing'),
             href: '/category/clothing',
         },
         {

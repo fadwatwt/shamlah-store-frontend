@@ -13,6 +13,8 @@ interface CartContextType {
     removeFromCart: (lineId: string) => Promise<void>;
     cartCount: number;
     subtotal: { amount: number; currency: string } | null;
+    shippingPrice: { amount: number; currency: string } | null;
+    totalPrice: { amount: number; currency: string } | null;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -23,6 +25,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [subtotal, setSubtotal] = useState<{ amount: number; currency: string } | null>(null);
+    const [shippingPrice, setShippingPrice] = useState<{ amount: number; currency: string } | null>(null);
+    const [totalPrice, setTotalPrice] = useState<{ amount: number; currency: string } | null>(null);
 
     // Initialize cart from local storage
     useEffect(() => {
@@ -42,7 +46,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             if (data.checkout) {
                 setCheckoutId(data.checkout.id);
                 setItems(data.checkout.lines);
-                setSubtotal(data.checkout.totalPrice?.gross);
+                setSubtotal(data.checkout.subtotalPrice?.gross || data.checkout.totalPrice?.gross);
+                setShippingPrice(data.checkout.shippingPrice?.gross || null);
+                setTotalPrice(data.checkout.totalPrice?.gross);
             } else {
                 // Token invalid or checkout expired
                 localStorage.removeItem('checkoutToken');
@@ -72,7 +78,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         setCheckoutToken(currentToken);
                         setCheckoutId(data.checkoutCreate.checkout.id);
                         setItems(data.checkoutCreate.checkout.lines);
-                        setSubtotal(data.checkoutCreate.checkout.totalPrice?.gross);
+                        setSubtotal(data.checkoutCreate.checkout.subtotalPrice?.gross || data.checkoutCreate.checkout.totalPrice?.gross);
+                        setShippingPrice(data.checkoutCreate.checkout.shippingPrice?.gross || null);
+                        setTotalPrice(data.checkoutCreate.checkout.totalPrice?.gross);
                     }
                 } else if (data.checkoutCreate?.errors && data.checkoutCreate.errors.length > 0) {
                     console.error('Error creating checkout:', data.checkoutCreate.errors);
@@ -83,7 +91,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 const data = await addLinesToCheckout(currentToken, [{ variantId, quantity }]);
                 if (data.checkoutLinesAdd?.checkout) {
                     setItems(data.checkoutLinesAdd.checkout.lines);
-                    setSubtotal(data.checkoutLinesAdd.checkout.totalPrice?.gross);
+                    setSubtotal(data.checkoutLinesAdd.checkout.subtotalPrice?.gross || data.checkoutLinesAdd.checkout.totalPrice?.gross);
+                    setShippingPrice(data.checkoutLinesAdd.checkout.shippingPrice?.gross || null);
+                    setTotalPrice(data.checkoutLinesAdd.checkout.totalPrice?.gross);
                 } else if (data.checkoutLinesAdd?.errors && data.checkoutLinesAdd.errors.length > 0) {
                     console.error('Error adding lines:', data.checkoutLinesAdd.errors);
                     throw new Error(data.checkoutLinesAdd.errors[0].message);
@@ -104,7 +114,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             const data = await updateCheckoutLines(checkoutToken, [{ lineId, quantity }]);
             if (data.checkoutLinesUpdate?.checkout) {
                 setItems(data.checkoutLinesUpdate.checkout.lines);
-                setSubtotal(data.checkoutLinesUpdate.checkout.totalPrice?.gross);
+                setSubtotal(data.checkoutLinesUpdate.checkout.subtotalPrice?.gross || data.checkoutLinesUpdate.checkout.totalPrice?.gross);
+                setShippingPrice(data.checkoutLinesUpdate.checkout.shippingPrice?.gross || null);
+                setTotalPrice(data.checkoutLinesUpdate.checkout.totalPrice?.gross);
             } else if (data.checkoutLinesUpdate?.errors && data.checkoutLinesUpdate.errors.length > 0) {
                 console.error('Error updating line:', data.checkoutLinesUpdate.errors);
             }
@@ -122,7 +134,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             const data = await deleteCheckoutLines(checkoutToken, [lineId]);
             if (data.checkoutLinesDelete?.checkout) {
                 setItems(data.checkoutLinesDelete.checkout.lines);
-                setSubtotal(data.checkoutLinesDelete.checkout.totalPrice?.gross);
+                setSubtotal(data.checkoutLinesDelete.checkout.subtotalPrice?.gross || data.checkoutLinesDelete.checkout.totalPrice?.gross);
+                setShippingPrice(data.checkoutLinesDelete.checkout.shippingPrice?.gross || null);
+                setTotalPrice(data.checkoutLinesDelete.checkout.totalPrice?.gross);
             } else if (data.checkoutLinesDelete?.errors && data.checkoutLinesDelete.errors.length > 0) {
                 console.error('Error removing line:', data.checkoutLinesDelete.errors);
             }
@@ -136,7 +150,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
     return (
-        <CartContext.Provider value={{ checkoutId, checkoutToken, items, loading, addToCart, updateLineQuantity, removeFromCart, cartCount, subtotal }}>
+        <CartContext.Provider value={{
+            checkoutId,
+            checkoutToken,
+            items,
+            loading,
+            addToCart,
+            updateLineQuantity,
+            removeFromCart,
+            cartCount,
+            subtotal,
+            shippingPrice,
+            totalPrice
+        }}>
             {children}
         </CartContext.Provider>
     );

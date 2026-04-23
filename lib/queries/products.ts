@@ -2,7 +2,7 @@ import { ProductsResponse, ProductResponse, ChannelsResponse } from '../types/sa
 import { request } from '../saleor-client';
 
 export const GET_PRODUCTS = `
-  query GetProducts($first: Int, $channel: String) {
+  query GetProducts($first: Int, $channel: String, $languageCode: LanguageCodeEnum!) {
     products(first: $first, channel: $channel, sortBy: { field: DATE, direction: DESC }) {
       edges {
         node {
@@ -10,6 +10,11 @@ export const GET_PRODUCTS = `
           name
           slug
           description
+          translation(languageCode: $languageCode) {
+            id
+            name
+            description
+          }
           pricing {
             priceRange {
               start {
@@ -67,12 +72,17 @@ export const GET_PRODUCTS = `
 `;
 
 export const GET_PRODUCT_BY_SLUG = `
-  query GetProductBySlug($slug: String!, $channel: String) {
+  query GetProductBySlug($slug: String!, $channel: String, $languageCode: LanguageCodeEnum!) {
     product(slug: $slug, channel: $channel) {
       id
       name
       slug
       description
+      translation(languageCode: $languageCode) {
+        id
+        name
+        description
+      }
       pricing {
         priceRange {
           start {
@@ -148,10 +158,10 @@ async function getActiveChannel(providedChannel?: string): Promise<string> {
   return 'default-channel';
 }
 
-export async function getProducts(first: number = 100, channel: string = 'default-channel') {
+export async function getProducts(first: number = 100, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<ProductsResponse>(GET_PRODUCTS, { first, channel: activeChannel });
+    const data = await request<ProductsResponse>(GET_PRODUCTS, { first, channel: activeChannel, languageCode });
     return data.products.edges.map(edge => edge.node);
   } catch (error: unknown) {
     const err = error as any;
@@ -168,10 +178,10 @@ export async function getProducts(first: number = 100, channel: string = 'defaul
   }
 }
 
-export async function getProductBySlug(slug: string, channel: string = 'default-channel') {
+export async function getProductBySlug(slug: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<ProductResponse>(GET_PRODUCT_BY_SLUG, { slug, channel: activeChannel });
+    const data = await request<ProductResponse>(GET_PRODUCT_BY_SLUG, { slug, channel: activeChannel, languageCode });
     return data.product;
   } catch (error: unknown) {
     const err = error as any;
@@ -183,13 +193,18 @@ export async function getProductBySlug(slug: string, channel: string = 'default-
   }
 }
 
-export const GET_PRODUCT_BY_ID = `
+export const GET_PRODUCT_BY_ID = (languageCode: string) => `
   query GetProductById($id: ID!, $channel: String) {
     product(id: $id, channel: $channel) {
       id
       name
       slug
       description
+      translation(languageCode: ${languageCode}) {
+        id
+        name
+        description
+      }
       pricing {
         priceRange {
           start {
@@ -212,6 +227,9 @@ export const GET_PRODUCT_BY_ID = `
         id
         name
         sku
+        translation(languageCode: ${languageCode}) {
+          name
+        }
         pricing {
           price {
             gross {
@@ -227,7 +245,6 @@ export const GET_PRODUCT_BY_ID = `
           }
           values {
             name
-            value
           }
         }
       }
@@ -240,15 +257,20 @@ export const GET_PRODUCT_BY_ID = `
           name
         }
       }
+      category {
+        id
+        name
+      }
     }
   }
 `;
 
-export async function getProductById(id: string, channel: string = 'default-channel') {
+export async function getProductById(id: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
-    console.log(`Fetching product with ID: ${id}`);
+    console.log(`Fetching product with ID: ${id}, languageCode: ${languageCode}`);
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<ProductResponse>(GET_PRODUCT_BY_ID, { id, channel: activeChannel });
+    const query = GET_PRODUCT_BY_ID(languageCode);
+    const data = await request<ProductResponse>(query, { id, channel: activeChannel });
     console.log(`Fetched product data:`, data.product ? 'Found' : 'Not Found');
     return data.product;
   } catch (error: unknown) {
@@ -261,7 +283,7 @@ export async function getProductById(id: string, channel: string = 'default-chan
   }
 }
 
-export const GET_PRODUCTS_BY_CATEGORY = `
+export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
   query GetProductsByCategory($first: Int, $channel: String, $categoryId: ID) {
     products(first: $first, channel: $channel, filter: { categories: [$categoryId] }) {
       edges {
@@ -270,6 +292,11 @@ export const GET_PRODUCTS_BY_CATEGORY = `
           name
           slug
           description
+          translation(languageCode: ${languageCode}) {
+            id
+            name
+            description
+          }
           pricing {
             priceRange {
               start {
@@ -295,6 +322,7 @@ export const GET_PRODUCTS_BY_CATEGORY = `
             quantityAvailable
             preorder {
               endDate
+            }
             }
             pricing {
               price {
@@ -329,11 +357,13 @@ export const GET_PRODUCTS_BY_CATEGORY = `
 export async function getProductsByCategory(
   categoryId: string,
   first: number = 20,
-  channel: string = 'default-channel'
+  channel: string = 'default-channel',
+  languageCode: 'AR' | 'EN' = 'EN'
 ) {
   try {
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<ProductsResponse>(GET_PRODUCTS_BY_CATEGORY, {
+    const query = GET_PRODUCTS_BY_CATEGORY(languageCode);
+    const data = await request<ProductsResponse>(query, {
       first,
       channel: activeChannel,
       categoryId
@@ -353,7 +383,7 @@ export async function getProductsByCategory(
 }
 
 export const GET_PRODUCTS_BY_CATEGORY_IDS = `
-  query GetProductsByCategoryIds($first: Int, $channel: String, $filter: ProductFilterInput) {
+  query GetProductsByCategoryIds($first: Int, $channel: String, $filter: ProductFilterInput, $languageCode: LanguageCodeEnum!) {
     products(first: $first, channel: $channel, filter: $filter) {
       edges {
         node {
@@ -361,6 +391,11 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
           name
           slug
           description
+          translation(languageCode: $languageCode) {
+            id
+            name
+            description
+          }
           pricing {
             priceRange {
               start {
@@ -439,7 +474,8 @@ export interface ProductFilters {
 export async function getProductsByCategoryIds(
   filters: ProductFilters | string[], // Backwards compatibility: allow string[] as categoryIds
   first: number = 100,
-  channel: string = 'default-channel'
+  channel: string = 'default-channel',
+  languageCode: 'AR' | 'EN' = 'EN'
 ) {
   try {
     const activeChannel = await getActiveChannel(channel);
@@ -474,7 +510,8 @@ export async function getProductsByCategoryIds(
     const data = await request<ProductsResponse>(GET_PRODUCTS_BY_CATEGORY_IDS, {
       first,
       channel: activeChannel,
-      filter: filterInput
+      filter: filterInput,
+      languageCode
     });
     return data.products.edges.map(edge => edge.node);
   } catch (error: unknown) {

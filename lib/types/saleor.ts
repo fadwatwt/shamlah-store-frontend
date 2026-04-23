@@ -45,6 +45,10 @@ export interface ProductVariant {
       value?: string;
     }>;
   }>;
+  translation?: {
+    id?: string;
+    name?: string;
+  };
 }
 
 export interface Product {
@@ -68,6 +72,11 @@ export interface Product {
       name: string;
     }>;
   }>;
+  translation?: {
+    id?: string;
+    name?: string;
+    description?: string;
+  };
 }
 
 export interface ProductsResponse {

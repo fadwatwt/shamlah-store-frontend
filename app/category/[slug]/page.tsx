@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { getProductsByCategoryIds, ProductFilters } from '@/lib/queries/products';
 import { getCategoryBySlug } from '@/lib/queries/categories';
 import { Product, Category } from '@/lib/types/saleor';
@@ -38,8 +39,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     const { slug } = await params;
     const resolvedSearchParams = await searchParams;
 
-    // Fetch the category by slug
-    const category = await getCategoryBySlug(slug);
+    // Get language from cookies
+    const cookieStore = await cookies();
+    const language = cookieStore.get('language')?.value || 'en';
+    const languageCode = language === 'ar' ? 'AR' : 'EN';
+
+    // Fetch the category by slug with language support
+    const category = await getCategoryBySlug(slug, languageCode as 'AR' | 'EN');
 
     if (!category) {
         return (

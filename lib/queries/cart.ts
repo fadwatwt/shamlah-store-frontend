@@ -94,11 +94,13 @@ export const CHECKOUT_FETCH = gql`
     checkout(token: $token) {
        id
        token
+       email
        lines {
          id
          quantity
          variant {
             id
+            name
             product {
               name
               thumbnail {
@@ -119,6 +121,32 @@ export const CHECKOUT_FETCH = gql`
          gross {
            amount
            currency
+         }
+       }
+       subtotalPrice {
+         gross {
+           amount
+           currency
+         }
+       }
+       shippingPrice {
+         gross {
+           amount
+           currency
+         }
+       }
+       availableShippingMethods {
+         id
+         name
+         price {
+           amount
+           currency
+         }
+       }
+       deliveryMethod {
+         ... on ShippingMethod {
+           id
+           name
          }
        }
     }
@@ -159,6 +187,54 @@ export const CHECKOUT_LINES_UPDATE = gql`
           }
         }
         totalPrice {
+          gross {
+            amount
+            currency
+          }
+        }
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const CHECKOUT_SHIPPING_ADDRESS_UPDATE = gql`
+  mutation CheckoutShippingAddressUpdate($token: UUID!, $shippingAddress: AddressInput!) {
+    checkoutShippingAddressUpdate(token: $token, shippingAddress: $shippingAddress) {
+      checkout {
+        id
+        availableShippingMethods {
+          id
+          name
+          price {
+            amount
+            currency
+          }
+        }
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const CHECKOUT_SHIPPING_METHOD_UPDATE = gql`
+  mutation CheckoutShippingMethodUpdate($token: UUID!, $shippingMethodId: ID!) {
+    checkoutShippingMethodUpdate(token: $token, shippingMethodId: $shippingMethodId) {
+      checkout {
+        id
+        totalPrice {
+          gross {
+            amount
+            currency
+          }
+        }
+        shippingPrice {
           gross {
             amount
             currency
@@ -258,4 +334,12 @@ export async function deleteCheckoutLines(token: string, linesIds: string[]) {
 
 export async function getCheckout(token: string) {
   return request<CheckoutResponse>(CHECKOUT_FETCH, { token });
+}
+export async function updateCheckoutShippingAddress(token: string, address: any) {
+  return request<any>(CHECKOUT_SHIPPING_ADDRESS_UPDATE, { token, shippingAddress: address });
+}
+
+export async function updateCheckoutShippingMethod(token: string, shippingMethodId: string) {
+  const variable = { token, shippingMethodId };
+  return request<any>(CHECKOUT_SHIPPING_METHOD_UPDATE, variable);
 }

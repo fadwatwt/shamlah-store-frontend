@@ -37,7 +37,7 @@ export default function ProductCard({
     variants = [],
     colors = ['#1a1a1a', '#2f3e46', '#79272C'] // Default mock colors matching the image style
 }: ProductCardProps & { colors?: string[] }) {
-    const { language } = useLanguage();
+    const { language, t } = useLanguage();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart } = useCart();
 
@@ -221,7 +221,9 @@ export default function ProductCard({
                     </h3>
 
                     {/* Price */}
-                    <p className="text-xl text-center font-semibold text-accent mb-3" dir="ltr">${price}</p>
+                    <p className="text-xl text-center font-semibold text-accent mb-3">
+                        {Math.round(price)} {t.common.currency}
+                    </p>
 
                     {/* Colors */}
                     <div className='flex justify-center'>

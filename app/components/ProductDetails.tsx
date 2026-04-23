@@ -7,6 +7,9 @@ import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { getShopShippingMethods } from '@/lib/queries/shop';
+import { getProductsByCategory } from '@/lib/queries/products';
+import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
 
 interface ProductDetailsProps {
@@ -30,6 +33,8 @@ export default function ProductDetails({ product, price, currency, images, sizes
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState(images[0]);
+    const [shippingMethods, setShippingMethods] = useState<any[]>([]);
+    const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
 
     // Mock colors - usually this would come from product variants
     const colors = [
@@ -62,14 +67,36 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
 
+    useEffect(() => {
+        const fetchData = async () => {
+            const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
+            const langCode = language === 'ar' ? 'AR' : 'EN';
+            
+            // Fetch shipping
+            const methods = await getShopShippingMethods(channel);
+            setShippingMethods(methods);
+
+            // Fetch related products if category exists
+            if (product.category?.id) {
+                const products = await getProductsByCategory(product.category.id, channel, 4, langCode);
+                // Filter out current product and limit to 3
+                const filtered = products
+                    .filter((p: any) => p.id !== product.id)
+                    .slice(0, 3);
+                setRelatedProducts(filtered);
+            }
+        };
+        fetchData();
+    }, [product.id, product.category?.id, language]);
+
     // Group variants by attributes (e.g., Size, Color)
     const variantAttributes = useMemo(() => {
         const map = new Map<string, Set<string>>();
         if (variants) {
             variants.forEach((variant: any) => {
                 variant.attributes?.forEach((attr: any) => {
-                    const attrName = attr.attribute.name;
-                    const attrValue = attr.values[0]?.name;
+                    const attrName = attr.attribute.translation?.name || attr.attribute.name;
+                    const attrValue = attr.values[0]?.translation?.name || attr.values[0]?.name;
                     if (attrName && attrValue) {
                         if (!map.has(attrName)) {
                             map.set(attrName, new Set());
@@ -98,8 +125,10 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     const initialOptions: Record<string, string> = {};
                     // Try to match default variant's options
                     defaultVariant.attributes?.forEach((attr: any) => {
-                        if (attr.values[0]?.name) {
-                            initialOptions[attr.attribute.name] = attr.values[0].name;
+                        const name = attr.attribute.translation?.name || attr.attribute.name;
+                        const val = attr.values[0]?.translation?.name || attr.values[0]?.name;
+                        if (val) {
+                            initialOptions[name] = val;
                         }
                     });
                     // Fill gaps if any
@@ -138,7 +167,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
         // Find variant matching these new options to update image if needed
         const newlySelectedVariant = product.variants?.find((variant: any) => {
             return variant.attributes?.every((attr: any) => {
-                return newOptions[attr.attribute.name] === attr.values[0]?.name;
+                const name = attr.attribute.translation?.name || attr.attribute.name;
+                const val = attr.values[0]?.translation?.name || attr.values[0]?.name;
+                return newOptions[name] === val;
             });
         });
 
@@ -167,7 +198,44 @@ export default function ProductDetails({ product, price, currency, images, sizes
     // Mock colors - if no variant colors, keep mock
     const hasColorAttribute = variantAttributes.has('Color') || variantAttributes.has('اللون');
 
-    // ... (rest of component)
+    // Translation handling
+    const displayName = product.translation?.name || product.name || '';
+    const displayDescription = product.translation?.description || product.description;
+
+    // Parse EditorJS description if it's in JSON format
+    const renderDescription = (desc: string | null) => {
+        if (!desc) return "قطعة فاخرة تجمع بين التراث الفلسطيني الأصيل والتصميم العصري. كل تفصيل في هذه القطعة يحكي قصة الأرض والإنسان، مصنوعة بحرفية عالية من مواد فاخرة مختارة بحناية.";
+        
+        try {
+            // Check if it's JSON
+            if (desc.trim().startsWith('{') || desc.trim().startsWith('[')) {
+                const parsed = JSON.parse(desc);
+                if (parsed.blocks) {
+                    return parsed.blocks.map((block: any, index: number) => {
+                        if (block.type === 'paragraph') {
+                            return <p key={index} className="mb-2">{block.data.text}</p>;
+                        }
+                        if (block.type === 'header') {
+                            const Tag = `h${block.data.level || 3}` as any;
+                            return <Tag key={index} className="font-bold mb-2">{block.data.text}</Tag>;
+                        }
+                        if (block.type === 'list') {
+                            const Tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+                            return (
+                                <Tag key={index} className="list-inside list-disc mb-2">
+                                    {block.data.items.map((item: string, i: number) => <li key={i}>{item}</li>)}
+                                </Tag>
+                            );
+                        }
+                        return null;
+                    });
+                }
+            }
+        } catch (e) {
+            // Fallback to plain text if not JSON
+        }
+        return desc;
+    };
 
     return (
         <main className="min-h-screen pt-32 pb-20 bg-background" dir={dir}>
@@ -180,7 +248,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         <span>/</span>
                         <Link href="/products" className="hover:text-accent smooth-transition">{t.product.breadcrumb.store}</Link>
                         <span>/</span>
-                        <span className="text-gray-900">{product.name}</span>
+                        <span className="text-gray-900">{displayName}</span>
                     </div>
                 </div>
 
@@ -218,13 +286,12 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     if (attr.attribute.name === 'Product Label' || attr.attribute.name === 'Label') {
                                         return attr.values.map((val: any, vIdx: number) => (
                                             <div key={`${idx}-${vIdx}`} className="bg-[#79272C] text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
-                                                {val.name}
+                                                {val.translation?.name || val.name}
                                             </div>
                                         ));
                                     }
                                     return null;
                                 })}
-
                                 {/* New Tag (Fallback or explicit attribute) */}
                                 {/* Keeping existing hardcoded New tag if no custom label overrides or always show? 
                                     Let's keep it but maybe conditional?
@@ -239,7 +306,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
                             <Image
                                 src={selectedImage}
-                                alt={product.name}
+                                alt={displayName}
                                 fill
                                 className="object-cover"
                                 priority
@@ -281,9 +348,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
                         {/* Title & Price */}
                         <div className="text-right mb-8">
-                            <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 font-serif">{product.name}</h1>
-                            <p className="text-2xl text-accent font-medium" dir="ltr">
-                                {currency} {Math.round(distinctPrice)}
+                            <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 font-serif">{displayName}</h1>
+                            <p className="text-2xl text-accent font-medium">
+                                {Math.round(distinctPrice)} {t.common.currency}
                             </p>
                         </div>
 
@@ -299,7 +366,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
                                     toggleWishlist({
                                         id: product.id,
-                                        name: product.name,
+                                        name: displayName,
                                         price: distinctPrice,
                                         image: images[0],
                                         rating: 5,
@@ -319,9 +386,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         {/* Description */}
                         <div className="mb-10 text-right">
                             <h3 className="font-bold text-gray-900 mb-3">{t.product.description}</h3>
-                            <p className="text-gray-600 leading-relaxed text-sm">
-                                {product.description || "قطعة فاخرة تجمع بين التراث الفلسطيني الأصيل والتصميم العصري. كل تفصيل في هذه القطعة يحكي قصة الأرض والإنسان، مصنوعة بحرفية عالية من مواد فاخرة مختارة بعناية."}
-                            </p>
+                            <div className="text-gray-600 leading-relaxed text-sm">
+                                {renderDescription(displayDescription)}
+                            </div>
                         </div>
 
                         {/* Selectors */}
@@ -432,14 +499,34 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                         return;
                                     }
                                     await addToCart(selectedVariantId, quantity);
-                                    alert(language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
                                 }}
-                                className="w-full bg-accent text-white py-4 rounded-sm font-bold text-lg hover:bg-accent/90 smooth-transition shadow-sm"
+                                disabled={loadingCart}
+                                className="w-full bg-accent text-white py-4 rounded-sm font-bold text-lg hover:bg-accent/90 smooth-transition shadow-sm flex items-center justify-center gap-3 disabled:opacity-70"
                             >
-                                {loadingCart ? (language === 'ar' ? 'جاري الإضافة...' : 'Adding...') : t.product.addToCart}
+                                {loadingCart ? (
+                                    <>
+                                        <LoadingSpinner size="sm" color="white" />
+                                        <span>{language === 'ar' ? 'جاري الإضافة...' : 'Adding...'}</span>
+                                    </>
+                                ) : t.product.addToCart}
                             </button>
-                            <button className="w-full bg-transparent border border-accent text-accent py-4 rounded-sm font-bold text-lg hover:bg-accent hover:text-white smooth-transition">
-                                {t.product.buyNow}
+                            <button
+                                onClick={async () => {
+                                    if (!selectedVariantId) {
+                                        alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
+                                        return;
+                                    }
+                                    try {
+                                        await addToCart(selectedVariantId, quantity);
+                                        window.location.href = '/checkout';
+                                    } catch (err) {
+                                        console.error('Buy Now failed', err);
+                                    }
+                                }}
+                                disabled={loadingCart}
+                                className="w-full bg-transparent border border-accent text-accent py-4 rounded-sm font-bold text-lg hover:bg-accent hover:text-white smooth-transition flex items-center justify-center gap-3 disabled:opacity-70"
+                            >
+                                {loadingCart ? <LoadingSpinner size="sm" color="accent" /> : t.product.buyNow}
                             </button>
                         </div>
 
@@ -455,40 +542,56 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     <svg className={`w-4 h-4 transition-transform ${activeTab === 'features' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </button>
                                 {activeTab === 'features' && (
-                                    <div className="pb-4 text-sm text-gray-600 leading-relaxed text-right">
+                                    <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                                         {attributes.length > 0 ? (
-                                            <ul className="list-disc pr-5 space-y-1">
+                                            <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
                                                 {attributes.map((attr, idx) => (
                                                     <li key={idx}>
-                                                        <span className="font-semibold">{attr.attribute.name}:</span>{' '}
-                                                        {attr.values.map(v => v.name).join(', ')}
+                                                        <span className="font-semibold">{attr.attribute.translation?.name || attr.attribute.name}:</span>{' '}
+                                                        {attr.values.map(v => v.translation?.name || v.name).join(', ')}
                                                     </li>
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <ul className="list-disc pr-5 space-y-1">
-                                                <li>تصميم يدوي 100%</li>
-                                                <li>مواد طبيعية وصديقة للبيئة</li>
-                                                <li>تطريز فلسطيني أصيل</li>
-                                                <li>ضمان الجودة مدى الحياة</li>
+                                            <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
+                                                <li>{language === 'ar' ? 'تصميم يدوي 100%' : '100% Handmade design'}</li>
+                                                <li>{language === 'ar' ? 'مواد طبيعية وصديقة للبيئة' : 'Natural and eco-friendly materials'}</li>
+                                                <li>{language === 'ar' ? 'تطريز فلسطيني أصيل' : 'Authentic Palestinian embroidery'}</li>
+                                                <li>{language === 'ar' ? 'ضمان الجودة مدى الحياة' : 'Lifetime quality guarantee'}</li>
                                             </ul>
                                         )}
                                     </div>
                                 )}
                             </div>
 
-                            {/* Care Instructions */}
+                            {/* Shipping Information */}
                             <div className="border-b border-gray-200">
                                 <button
-                                    onClick={() => toggleTab('care')}
+                                    onClick={() => toggleTab('shipping')}
                                     className="w-full py-4 flex justify-between items-center text-gray-900 font-medium hover:text-accent transition-colors"
                                 >
-                                    <span>{t.product.careInstructions}</span>
-                                    <svg className={`w-4 h-4 transition-transform ${activeTab === 'care' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    <span>{language === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</span>
+                                    <svg className={`w-4 h-4 transition-transform ${activeTab === 'shipping' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </button>
-                                {activeTab === 'care' && (
-                                    <div className="pb-4 text-sm text-gray-600 leading-relaxed text-right">
-                                        يُنصح بالتنظيف الجاف فقط للحفاظ على جودة التطريز والألوان. تجنب التعرض المباشر لأشعة الشمس لفترات طويلة.
+                                {activeTab === 'shipping' && (
+                                    <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                        {shippingMethods.length > 0 ? (
+                                            <div className="space-y-3">
+                                                {shippingMethods.map((method) => (
+                                                    <div key={method.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+                                                        <span className="font-medium text-accent">
+                                                            {method.price.amount} {t.common.currency}
+                                                        </span>
+                                                        <span>{method.name}</span>
+                                                    </div>
+                                                ))}
+                                                <p className="text-[11px] text-gray-400 mt-2">
+                                                    {language === 'ar' ? '* قد تختلف مده التوصيل حسب وجهتك المحددة' : '* Delivery times may vary depending on your specific destination'}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p>{language === 'ar' ? 'سيتم حساب تكلفة الشحن عند إتمام الطلب' : 'Shipping cost will be calculated at checkout'}</p>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -497,33 +600,40 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     </div>
                 </div>
 
-                {/* Related Products Divider */}
-                <div className="flex flex-col items-center justify-center mb-16">
-                    <Image
-                        src="/image.png"
-                        alt="Decoration"
-                        width={24}
-                        height={24}
-                        className="opacity-40 mb-4"
-                    />
-                    <h2 className="text-3xl font-serif text-accent mb-2">{t.product.youMightLike}</h2>
-                </div>
+                {/* Related Products Section */}
+                {relatedProducts.length > 0 && (
+                    <>
+                        <div className="flex flex-col items-center justify-center mb-16">
+                            <Image
+                                src="/image.png"
+                                alt="Decoration"
+                                width={24}
+                                height={24}
+                                className="opacity-40 mb-4"
+                            />
+                            <h2 className="text-3xl font-serif text-accent mb-2">{t.product.youMightLike}</h2>
+                        </div>
 
-                {/* Related Products Grid (Mock Data for Visuals) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-                    {[1, 2, 3].map((i) => (
-                        <ProductCard
-                            key={i}
-                            id={`related-${i}`}
-                            name={i === 1 ? 'Burgundy Patterns Bag' : i === 2 ? 'Memory Luxury Bag' : 'Olive Classic Bag'}
-                            price={i === 1 ? 1100 : i === 2 ? 1450 : 950}
-                            image={i === 1 ? 'https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&q=80&w=400' :
-                                i === 2 ? 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?auto=format&fit=crop&q=80&w=400' :
-                                    'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=400'}
-                            isBestSeller={i === 2}
-                        />
-                    ))}
-                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+                            {relatedProducts.map((p) => {
+                                const price = p.pricing?.priceRange?.start?.gross?.amount || 0;
+                                const image = p.thumbnail?.url || p.images?.[0]?.url || 'https://placehold.co/400x500?text=No+Image';
+                                const name = p.translation?.name || p.name;
+                                
+                                return (
+                                    <ProductCard
+                                        key={p.id}
+                                        id={p.id}
+                                        name={name}
+                                        price={price}
+                                        image={image}
+                                        isBestSeller={false}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </div>
         </main>
     );

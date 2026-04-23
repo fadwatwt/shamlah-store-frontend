@@ -3,6 +3,7 @@ export const translations = {
         common: {
             backToProfile: 'العودة لحسابي',
             items: 'منتجات',
+            currency: 'دولار',
         },
         nav: {
             bags: 'حقائب',
@@ -276,6 +277,7 @@ export const translations = {
         common: {
             backToProfile: 'Back to Profile',
             items: 'Items',
+            currency: 'USD',
         },
         nav: {
             bags: 'Bags',

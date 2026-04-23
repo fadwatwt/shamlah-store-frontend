@@ -1,6 +1,7 @@
 import { getProductById } from '@/lib/queries/products';
 import { notFound } from "next/navigation";
 import ProductDetails from '../../components/ProductDetails';
+import { cookies } from 'next/headers';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: rawId } = await params;
@@ -9,7 +10,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     const id = rawId ? decodeURIComponent(rawId) : '';
     console.log('Using decoded ID:', id);
 
-    const productData = await getProductById(id);
+    // Get language from cookies
+    const cookieStore = await cookies();
+    const language = cookieStore.get('language')?.value || 'en';
+    const languageCode = language === 'ar' ? 'AR' : 'EN';
+
+    const productData = await getProductById(id, undefined, languageCode as 'AR' | 'EN');
     console.log('Product Data result:', productData ? 'Found' : 'Null');
 
     if (!productData) {
