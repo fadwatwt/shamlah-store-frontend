@@ -92,7 +92,7 @@ export default function ProductCard({
                         width={400}
                         height={500}
                         className="w-full h-96 object-cover smooth-transition group-hover:scale-110"
-                        unoptimized={image.startsWith('http')}
+                        unoptimized={process.env.NODE_ENV === 'production' || image.startsWith('http://localhost:8000') || image.includes('onrender.com')}
                     />
                 </Link>
                 <div className="absolute top-4 end-4 flex flex-col gap-2 items-end">

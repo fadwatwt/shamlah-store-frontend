@@ -54,15 +54,9 @@ export const GET_PRODUCTS = `
           attributes {
             attribute {
               name
-              translation(languageCode: $languageCode) {
-                name
-              }
             }
             values {
               name
-              translation(languageCode: $languageCode) {
-                name
-              }
             }
           }
         }
@@ -248,15 +242,9 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
           attribute {
             name
             slug
-            translation(languageCode: ${languageCode}) {
-              name
-            }
           }
           values {
             name
-            translation(languageCode: ${languageCode}) {
-              name
-            }
           }
         }
       }
@@ -264,15 +252,9 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
         attribute {
           name
           slug
-          translation(languageCode: ${languageCode}) {
-            name
-          }
         }
         values {
           name
-          translation(languageCode: ${languageCode}) {
-            name
-          }
         }
       }
       category {
@@ -346,15 +328,9 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
           attributes {
             attribute {
               name
-              translation(languageCode: ${languageCode}) {
-                name
-              }
             }
             values {
               name
-              translation(languageCode: ${languageCode}) {
-                name
-              }
             }
           }
         }
@@ -461,16 +437,10 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
             attribute {
               name
               slug
-              translation(languageCode: $languageCode) {
-                name
-              }
             }
             values {
               name
               slug
-              translation(languageCode: $languageCode) {
-                name
-              }
             }
           }
         }

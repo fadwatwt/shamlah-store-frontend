@@ -175,7 +175,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                     alt={category.title}
                                     fill
                                     className="object-cover smooth-transition group-hover:scale-110"
-                                    unoptimized={category.image.startsWith('http')}
+                                    unoptimized={process.env.NODE_ENV === 'production' || category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com')}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                                 <div className="absolute bottom-0 left-0 right-0 p-8 text-white">

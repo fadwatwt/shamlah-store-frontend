@@ -54,7 +54,7 @@ export default function CartPage() {
                                                 alt={name}
                                                 fill
                                                 className="object-cover rounded-md"
-                                                unoptimized={image.startsWith('http')}
+                                                unoptimized={process.env.NODE_ENV === 'production' || image.startsWith('http://localhost') || image.includes('onrender.com')}
                                             />
                                         </div>
 
