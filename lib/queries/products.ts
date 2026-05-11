@@ -252,9 +252,15 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
         attribute {
           name
           slug
+          translation(languageCode: ${languageCode}) {
+            name
+          }
         }
         values {
           name
+          translation(languageCode: ${languageCode}) {
+            name
+          }
         }
       }
       category {
