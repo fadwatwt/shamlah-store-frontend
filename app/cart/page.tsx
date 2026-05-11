@@ -54,7 +54,7 @@ export default function CartPage() {
                                                 alt={name}
                                                 fill
                                                 className="object-cover rounded-md"
-                                                unoptimized={image.startsWith('http://localhost')}
+                                                unoptimized={image.startsWith('http')}
                                             />
                                         </div>
 

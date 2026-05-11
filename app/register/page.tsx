@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function RegisterPage() {
     const { t, dir } = useLanguage();
     const { register } = useAuth();
+    const router = useRouter();
 
     // Form state
     const [fullName, setFullName] = useState('');
@@ -45,12 +47,12 @@ export default function RegisterPage() {
 
             if (!result.success) {
                 setError(result.error || 'Registration failed');
-            } else {
+            } else if ((result as any).requiresVerification) {
+                // Saleor يطلب تحقق الإيميل — أظهر رسالة للمستخدم
                 setSuccess(true);
-                // Optional: Clear form
-                setEmail('');
-                setPassword('');
-                setConfirmPassword('');
+            } else {
+                // تسجيل دخول تلقائي نجح — انتقل للصفحة الرئيسية
+                router.push('/');
             }
         } catch {
             setError(dir === 'rtl' ? 'حدث خطأ غير متوقع' : 'An unexpected error occurred');

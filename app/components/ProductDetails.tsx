@@ -368,7 +368,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 fill
                                 className="object-cover"
                                 priority
-                                unoptimized={selectedImage.startsWith('http://localhost:8000') || selectedImage.includes('onrender.com')}
+                                unoptimized={selectedImage.startsWith('http')}
                             />
                         </div>
                         {/* Thumbnails */}
@@ -384,7 +384,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                         alt={`Thumbnail ${idx}`}
                                         fill
                                         className="object-cover"
-                                        unoptimized={img.startsWith('http://localhost:8000') || img.includes('onrender.com')}
+                                        unoptimized={img.startsWith('http')}
                                     />
                                 </button>
                             ))}

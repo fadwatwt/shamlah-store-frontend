@@ -103,9 +103,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (data.accountRegister?.user) {
-                // Registration successful
-                // Depending on configuration, user might need to verify email
-                return { success: true };
+                // محاولة تسجيل دخول تلقائي
+                // إذا كان التحقق من الإيميل مفعّلاً في Saleor، سيفشل وسنعيد { success: true, requiresVerification: true }
+                const loginResult = await login(input.email, input.password);
+                if (loginResult.success) {
+                    return { success: true };
+                }
+                // تسجيل الدخول فشل = Saleor يطلب تحقق الإيميل
+                return { success: true, requiresVerification: true } as any;
             }
 
             return { success: false, error: 'Registration failed' };
