@@ -14,9 +14,6 @@ interface HomeContentProps {
 export default function HomeContent({ bestSellers, categories: saleorCategories }: HomeContentProps) {
     const { t, dir, language } = useLanguage();
 
-    // Debugging: Log categories to see if backgroundImage exists
-    console.log('Categories from Saleor:', saleorCategories);
-
     // Fetch images strictly from Saleor category data
     const getCategoryImage = (slug: string) => {
         const category = saleorCategories.find(c => 

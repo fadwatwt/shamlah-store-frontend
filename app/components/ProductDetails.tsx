@@ -4,13 +4,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { getShopShippingMethods } from '@/lib/queries/shop';
+import { useAuth } from '../context/AuthContext';
 import { getProductsByCategory } from '@/lib/queries/products';
 import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
+import LoginModal from './LoginModal';
 
 interface ProductDetailsProps {
     product: any;
@@ -27,22 +29,79 @@ interface ProductDetailsProps {
 
 export default function ProductDetails({ product, price, currency, images, sizes, attributes = [], variants = [] }: ProductDetailsProps) {
     const { t, dir, language } = useLanguage();
+    const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart, loading: loadingCart } = useCart();
+    const { isAuthenticated } = useAuth();
     const [selectedSize, setSelectedSize] = useState(sizes[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState(images[0]);
-    const [shippingMethods, setShippingMethods] = useState<any[]>([]);
     const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
+    // Action to retry after a successful login (set when user clicks a gated button)
+    const [pendingAction, setPendingAction] = useState<'addToCart' | 'buyNow' | null>(null);
 
-    // Mock colors - usually this would come from product variants
-    const colors = [
-        { name: 'Beige', hex: '#ECE5D3' },
-        { name: 'Black', hex: '#1A1A1A' },
-        { name: 'Red', hex: '#79272C' },
-    ];
-    const [selectedColor, setSelectedColor] = useState(colors[2]);
+    const handleAddToCart = async () => {
+        if (!selectedVariantId) {
+            alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
+            return;
+        }
+        await addToCart(selectedVariantId, quantity);
+    };
+
+    const handleBuyNow = async () => {
+        if (!selectedVariantId) {
+            alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
+            return;
+        }
+        try {
+            await addToCart(selectedVariantId, quantity);
+            router.push('/checkout');
+        } catch (err) {
+            console.error('Buy Now failed', err);
+        }
+    };
+
+    const requireAuthThen = (action: 'addToCart' | 'buyNow') => {
+        if (isAuthenticated) {
+            if (action === 'addToCart') handleAddToCart();
+            else handleBuyNow();
+            return;
+        }
+        setPendingAction(action);
+        setLoginModalOpen(true);
+    };
+
+    const onLoginSuccess = () => {
+        const action = pendingAction;
+        setPendingAction(null);
+        // Defer slightly so the modal closes first
+        setTimeout(() => {
+            if (action === 'addToCart') handleAddToCart();
+            else if (action === 'buyNow') handleBuyNow();
+        }, 50);
+    };
+
+    // Derive colors from the product's "Color"/"Colors" attribute (values are hex codes from Saleor)
+    const productColors = useMemo(() => {
+        if (!attributes || attributes.length === 0) return [];
+        const colorAttr = attributes.find(a => {
+            const slug = a.attribute.slug?.toLowerCase();
+            const name = a.attribute.name?.toLowerCase();
+            return slug === 'color' || slug === 'colors'
+                || name === 'color' || name === 'colors'
+                || name === 'اللون' || name === 'ألوان';
+        });
+        if (!colorAttr) return [];
+        return colorAttr.values
+            .map(v => ({ name: v.name, hex: v.name }))
+            .filter(c => /^#[0-9a-f]{3,8}$/i.test(c.hex));
+    }, [attributes]);
+    const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
+    useEffect(() => {
+        setSelectedColor(productColors[0] ?? null);
+    }, [productColors]);
 
     const handleShare = async () => {
         if (navigator.share) {
@@ -71,15 +130,10 @@ export default function ProductDetails({ product, price, currency, images, sizes
         const fetchData = async () => {
             const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
             const langCode = language === 'ar' ? 'AR' : 'EN';
-            
-            // Fetch shipping
-            const methods = await getShopShippingMethods(channel);
-            setShippingMethods(methods);
 
             // Fetch related products if category exists
             if (product.category?.id) {
-                const products = await getProductsByCategory(product.category.id, channel, 4, langCode);
-                // Filter out current product and limit to 3
+                const products = await getProductsByCategory(product.category.id, 4, channel, langCode);
                 const filtered = products
                     .filter((p: any) => p.id !== product.id)
                     .slice(0, 3);
@@ -204,7 +258,11 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     // Parse EditorJS description if it's in JSON format
     const renderDescription = (desc: string | null) => {
-        if (!desc) return "قطعة فاخرة تجمع بين التراث الفلسطيني الأصيل والتصميم العصري. كل تفصيل في هذه القطعة يحكي قصة الأرض والإنسان، مصنوعة بحرفية عالية من مواد فاخرة مختارة بحناية.";
+        if (!desc) {
+            return language === 'ar'
+                ? 'قطعة فاخرة تجمع بين التراث الفلسطيني الأصيل والتصميم العصري. كل تفصيل يحكي قصة الأرض والإنسان، مصنوعة بحرفية عالية من مواد فاخرة مختارة بعناية.'
+                : 'A luxury piece combining authentic Palestinian heritage with contemporary design. Every detail tells the story of the land and its people, crafted with exceptional skill from carefully selected premium materials.';
+        }
         
         try {
             // Check if it's JSON
@@ -238,17 +296,18 @@ export default function ProductDetails({ product, price, currency, images, sizes
     };
 
     return (
+        <>
         <main className="min-h-screen pt-32 pb-20 bg-background" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
-                {/* Upper Section: Breadcrumbs & Navigation */}
-                <div className="flex justify-end mb-8 text-sm text-gray-500">
+                {/* Upper Section: Breadcrumbs */}
+                <div className="flex justify-start mb-8 text-sm text-gray-500">
                     <div className="flex items-center gap-2">
                         <Link href="/" className="hover:text-accent smooth-transition">{t.product.breadcrumb.home}</Link>
-                        <span>/</span>
+                        <svg className={`w-3 h-3 text-gray-400 ${language === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         <Link href="/products" className="hover:text-accent smooth-transition">{t.product.breadcrumb.store}</Link>
-                        <span>/</span>
-                        <span className="text-gray-900">{displayName}</span>
+                        <svg className={`w-3 h-3 text-gray-400 ${language === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        <span className="text-accent">{displayName}</span>
                     </div>
                 </div>
 
@@ -257,9 +316,8 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     {/* Left Column: Images */}
                     <div className="space-y-4">
                         <div className="relative aspect-[4/5] bg-gray-50 rounded-lg overflow-hidden">
-                            {/* New Tag */}
                             {/* Badges Container */}
-                            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end">
+                            <div className="absolute top-4 end-4 z-10 flex flex-col gap-2 items-end">
                                 {/* Sold Out Badge */}
                                 {selectedVariant?.quantityAvailable !== undefined && selectedVariant.quantityAvailable <= 0 && (
                                     <div className="bg-gray-800 text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
@@ -336,7 +394,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     {/* Right Column: Details */}
                     <div>
                         {/* Decorative Icon */}
-                        <div className="flex justify-end mb-4">
+                        <div className="flex justify-start mb-4">
                             <Image
                                 src="/image3.png"
                                 alt="Decoration"
@@ -346,45 +404,52 @@ export default function ProductDetails({ product, price, currency, images, sizes
                             />
                         </div>
 
-                        {/* Title & Price */}
-                        <div className="text-right mb-8">
-                            <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-2 font-serif">{displayName}</h1>
+                        {/* Title */}
+                        <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-4 font-serif text-start">{displayName}</h1>
+
+                        {/* Price & Actions Row */}
+                        <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-200">
                             <p className="text-2xl text-accent font-medium">
-                                {Math.round(distinctPrice)} {t.common.currency}
+                                {language === 'ar'
+                                    ? `${Math.round(distinctPrice)} ${t.common.currency}`
+                                    : `$${Math.round(distinctPrice)}`}
                             </p>
-                        </div>
+                            <div className="flex gap-4 items-center">
+                                <button
+                                    onClick={() => {
+                                        const quantity = variants?.reduce((acc, v) => acc + (v.quantityAvailable || 0), 0) || 0;
+                                        const isPreorder = variants?.some((v: any) => v.preorder?.endDate) || false;
 
-                        {/* Actions: Share & Wishlist */}
-                        <div className="flex gap-4 mb-8">
-                            <button onClick={handleShare} className="text-gray-400 hover:text-accent transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const quantity = variants?.reduce((acc, v) => acc + (v.quantityAvailable || 0), 0) || 0;
-                                    const isPreorder = variants?.some((v: any) => v.preorder?.endDate) || false;
-
-                                    toggleWishlist({
-                                        id: product.id,
-                                        name: displayName,
-                                        price: distinctPrice,
-                                        image: images[0],
-                                        rating: 5,
-                                        quantityAvailable: quantity,
-                                        isPreorder: isPreorder,
-                                        isBestSeller: false, // Or pass if available
-                                        attributes: attributes,
-                                        variants: variants
-                                    });
-                                }}
-                                className={`${isInWishlist(product.id) ? 'text-accent fill-accent' : 'text-gray-400 hover:text-accent'} transition-colors`}
-                            >
-                                <svg className="w-6 h-6" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-                            </button>
+                                        toggleWishlist({
+                                            id: product.id,
+                                            name: displayName,
+                                            price: distinctPrice,
+                                            image: images[0],
+                                            rating: 5,
+                                            quantityAvailable: quantity,
+                                            isPreorder: isPreorder,
+                                            isBestSeller: false,
+                                            attributes: attributes,
+                                            variants: variants
+                                        });
+                                    }}
+                                    aria-label={language === 'ar' ? 'إضافة للمفضلة' : 'Add to wishlist'}
+                                    className={`${isInWishlist(product.id) ? 'text-accent' : 'text-gray-400 hover:text-accent'} transition-colors`}
+                                >
+                                    <svg className="w-6 h-6" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                                </button>
+                                <button
+                                    onClick={handleShare}
+                                    aria-label={language === 'ar' ? 'مشاركة' : 'Share'}
+                                    className="text-gray-400 hover:text-accent transition-colors"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                </button>
+                            </div>
                         </div>
 
                         {/* Description */}
-                        <div className="mb-10 text-right">
+                        <div className="mb-10 text-start">
                             <h3 className="font-bold text-gray-900 mb-3">{t.product.description}</h3>
                             <div className="text-gray-600 leading-relaxed text-sm">
                                 {renderDescription(displayDescription)}
@@ -392,13 +457,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         </div>
 
                         {/* Selectors */}
-                        <div className="space-y-6 mb-10 text-right">
+                        <div className="space-y-6 mb-10 text-start">
 
                             {/* Dynamic Variant Selectors */}
                             {Array.from(variantAttributes.entries()).map(([attrName, values]) => (
                                 <div key={attrName}>
                                     <h3 className="font-bold text-gray-900 mb-3">{attrName}</h3>
-                                    <div className="flex justify-end gap-3 flex-wrap">
+                                    <div className="flex justify-start gap-3 flex-wrap">
                                         {Array.from(values).map((value) => {
                                             const isSelected = selectedOptions[attrName] === value || (!selectedOptions[attrName] && Array.from(values)[0] === value);
 
@@ -428,7 +493,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     {/* Size */}
                                     <div>
                                         <h3 className="font-bold text-gray-900 mb-3">{t.product.size}</h3>
-                                        <div className="flex justify-end gap-3">
+                                        <div className="flex justify-start gap-3">
                                             {sizes.length > 0 ? sizes.map(size => (
                                                 <button
                                                     key={size}
@@ -444,23 +509,25 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                                         onClick={() => handleLegacySizeChange(size)}
                                                         className={`px-6 py-2 border rounded-sm text-sm transition-all ${selectedSize === size ? 'border-accent text-accent' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
                                                     >
-                                                        {size === 'S' ? 'صغير' : size === 'M' ? 'متوسط' : 'كبير'}
+                                                        {language === 'ar'
+                                                            ? (size === 'S' ? 'صغير' : size === 'M' ? 'متوسط' : 'كبير')
+                                                            : (size === 'S' ? 'Small' : size === 'M' ? 'Medium' : 'Large')}
                                                     </button>
                                                 ))
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Color */}
-                                    {!hasColorAttribute && (
+                                    {/* Color — only if Saleor "Colors" attribute exists on the product */}
+                                    {!hasColorAttribute && productColors.length > 0 && (
                                         <div>
                                             <h3 className="font-bold text-gray-900 mb-3">{t.product.color}</h3>
-                                            <div className="flex justify-end gap-3">
-                                                {colors.map((color) => (
+                                            <div className="flex justify-start gap-3">
+                                                {productColors.map((color) => (
                                                     <button
-                                                        key={color.name}
+                                                        key={color.hex}
                                                         onClick={() => setSelectedColor(color)}
-                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor.name === color.name ? 'border-accent scale-110' : 'border-transparent'}`}
+                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${selectedColor?.hex === color.hex ? 'border-accent scale-110' : 'border-transparent'}`}
                                                         style={{ backgroundColor: color.hex, boxShadow: '0 0 0 1px #e5e5e5' }}
                                                         aria-label={color.name}
                                                     />
@@ -474,16 +541,16 @@ export default function ProductDetails({ product, price, currency, images, sizes
                             {/* Quantity */}
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-3">{t.product.quantity}</h3>
-                                <div className="flex justify-end">
+                                <div className="flex justify-start">
                                     <div className="flex items-center border border-gray-200 rounded-sm">
                                         <button
                                             onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                            className="px-4 py-2 text-gray-600 hover:bg-gray-50 border-l border-gray-200"
+                                            className="px-4 py-2 text-gray-600 hover:bg-gray-50 border-e border-gray-200"
                                         >-</button>
                                         <span className="px-4 py-2 text-gray-900 w-12 text-center font-medium">{quantity}</span>
                                         <button
                                             onClick={() => setQuantity(quantity + 1)}
-                                            className="px-4 py-2 text-gray-600 hover:bg-gray-50 border-r border-gray-200"
+                                            className="px-4 py-2 text-gray-600 hover:bg-gray-50 border-s border-gray-200"
                                         >+</button>
                                     </div>
                                 </div>
@@ -493,13 +560,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         {/* Action Buttons */}
                         <div className="space-y-4 mb-12">
                             <button
-                                onClick={async () => {
-                                    if (!selectedVariantId) {
-                                        alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
-                                        return;
-                                    }
-                                    await addToCart(selectedVariantId, quantity);
-                                }}
+                                onClick={() => requireAuthThen('addToCart')}
                                 disabled={loadingCart}
                                 className="w-full bg-accent text-white py-4 rounded-sm font-bold text-lg hover:bg-accent/90 smooth-transition shadow-sm flex items-center justify-center gap-3 disabled:opacity-70"
                             >
@@ -511,18 +572,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 ) : t.product.addToCart}
                             </button>
                             <button
-                                onClick={async () => {
-                                    if (!selectedVariantId) {
-                                        alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
-                                        return;
-                                    }
-                                    try {
-                                        await addToCart(selectedVariantId, quantity);
-                                        window.location.href = '/checkout';
-                                    } catch (err) {
-                                        console.error('Buy Now failed', err);
-                                    }
-                                }}
+                                onClick={() => requireAuthThen('buyNow')}
                                 disabled={loadingCart}
                                 className="w-full bg-transparent border border-accent text-accent py-4 rounded-sm font-bold text-lg hover:bg-accent hover:text-white smooth-transition flex items-center justify-center gap-3 disabled:opacity-70"
                             >
@@ -545,7 +595,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                                         {attributes.length > 0 ? (
                                             <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
-                                                {attributes.map((attr, idx) => (
+                                                {attributes.filter(attr => {
+                                                    const n = attr.attribute.name?.toLowerCase();
+                                                    const s = attr.attribute.slug?.toLowerCase();
+                                                    return n !== 'color' && n !== 'colors' && n !== 'اللون' && n !== 'ألوان'
+                                                        && s !== 'color' && s !== 'colors'
+                                                        && !['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(attr.attribute.name);
+                                                }).map((attr, idx) => (
                                                     <li key={idx}>
                                                         <span className="font-semibold">{attr.attribute.translation?.name || attr.attribute.name}:</span>{' '}
                                                         {attr.values.map(v => v.translation?.name || v.name).join(', ')}
@@ -564,34 +620,39 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 )}
                             </div>
 
-                            {/* Shipping Information */}
+                            {/* Care Instructions */}
                             <div className="border-b border-gray-200">
                                 <button
-                                    onClick={() => toggleTab('shipping')}
+                                    onClick={() => toggleTab('care')}
                                     className="w-full py-4 flex justify-between items-center text-gray-900 font-medium hover:text-accent transition-colors"
                                 >
-                                    <span>{language === 'ar' ? 'معلومات الشحن' : 'Shipping Information'}</span>
-                                    <svg className={`w-4 h-4 transition-transform ${activeTab === 'shipping' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    <span>{t.product.careInstructions}</span>
+                                    <svg className={`w-4 h-4 transition-transform ${activeTab === 'care' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                 </button>
-                                {activeTab === 'shipping' && (
-                                    <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
-                                        {shippingMethods.length > 0 ? (
-                                            <div className="space-y-3">
-                                                {shippingMethods.map((method) => (
-                                                    <div key={method.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                                                        <span className="font-medium text-accent">
-                                                            {method.price.amount} {t.common.currency}
-                                                        </span>
-                                                        <span>{method.name}</span>
-                                                    </div>
-                                                ))}
-                                                <p className="text-[11px] text-gray-400 mt-2">
-                                                    {language === 'ar' ? '* قد تختلف مده التوصيل حسب وجهتك المحددة' : '* Delivery times may vary depending on your specific destination'}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <p>{language === 'ar' ? 'سيتم حساب تكلفة الشحن عند إتمام الطلب' : 'Shipping cost will be calculated at checkout'}</p>
-                                        )}
+                                {activeTab === 'care' && (
+                                    <div className="pb-4 text-sm text-gray-600 leading-relaxed text-start">
+                                        {(() => {
+                                            const careAttr = attributes.find(a =>
+                                                ['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(a.attribute.name)
+                                            );
+                                            if (careAttr && careAttr.values.length > 0) {
+                                                return (
+                                                    <ul className="list-disc ms-5 space-y-1">
+                                                        {careAttr.values.map((v: any, idx) => (
+                                                            <li key={idx}>{v.translation?.name || v.name}</li>
+                                                        ))}
+                                                    </ul>
+                                                );
+                                            }
+                                            return (
+                                                <ul className="list-disc ms-5 space-y-1">
+                                                    <li>{language === 'ar' ? 'تجنبي تعريض القطعة لأشعة الشمس المباشرة لفترات طويلة' : 'Avoid prolonged exposure to direct sunlight'}</li>
+                                                    <li>{language === 'ar' ? 'احفظي القطعة في مكان جاف بعيد عن الرطوبة' : 'Store in a dry place, away from moisture'}</li>
+                                                    <li>{language === 'ar' ? 'يُنصح بالتنظيف الجاف من قبل متخصص' : 'Professional dry cleaning is recommended'}</li>
+                                                    <li>{language === 'ar' ? 'استخدمي قطعة قماش ناعمة لمسح الجلد عند الحاجة' : 'Wipe leather gently with a soft cloth when needed'}</li>
+                                                </ul>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -636,5 +697,12 @@ export default function ProductDetails({ product, price, currency, images, sizes
                 )}
             </div>
         </main>
+        <LoginModal
+            isOpen={loginModalOpen}
+            onClose={() => { setLoginModalOpen(false); setPendingAction(null); }}
+            onLoginSuccess={onLoginSuccess}
+            message={language === 'ar' ? 'يرجى تسجيل الدخول لإتمام عملية الشراء' : 'Please log in to complete your purchase'}
+        />
+        </>
     );
 }

@@ -44,20 +44,7 @@ export async function getCategories(languageCode: 'AR' | 'EN' = 'EN') {
     return data.categories.edges.map(edge => edge.node);
   } catch (error: unknown) {
     const err = error as any;
-    console.error('Error fetching categories:', {
-      message: err?.message,
-      code: err?.code,
-      response: err?.response,
-    });
-
-    // Silent fail if connection refused or database not set up
-    const isConnectionError = err?.code === 'ECONNREFUSED';
-    const isDatabaseError = err?.message?.includes('does not exist') ||
-      err?.response?.errors?.[0]?.message?.includes('does not exist');
-
-    if (!isConnectionError && !isDatabaseError) {
-      console.warn('Failed to fetch categories from Saleor:', err?.message || 'Unknown error');
-    }
+    console.error('Error fetching categories:', err?.message || 'Unknown error');
     return [];
   }
 }
@@ -114,12 +101,8 @@ const getCategoryBySlugQuery = (languageCode: string) => `
 `;
 
 export async function getCategoryBySlug(slug: string, languageCode: 'AR' | 'EN' = 'EN') {
-  try {
-    const query = getCategoryBySlugQuery(languageCode);
-    const data = await request<CategoryResponse>(query, { slug });
-    return data.category;
-  } catch (error: unknown) {
-    console.error('Error fetching category by slug:', error);
-    return null;
-  }
+  const query = getCategoryBySlugQuery(languageCode);
+  // Let network errors propagate — caller decides between notFound() vs error page
+  const data = await request<CategoryResponse>(query, { slug });
+  return data.category; // null = category genuinely doesn't exist
 }

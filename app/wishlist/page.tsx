@@ -11,7 +11,7 @@ export default function WishlistPage() {
     const { items: wishlistItems } = useWishlist();
 
     return (
-        <main className="min-h-screen pt-32 pb-20 bg-white md:px-24" dir={dir}>
+        <main className="min-h-screen pt-32 pb-20 bg-white" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Header */}

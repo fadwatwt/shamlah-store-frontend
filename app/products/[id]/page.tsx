@@ -5,21 +5,42 @@ import { cookies } from 'next/headers';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: rawId } = await params;
-    console.log('Rendering ProductPage for ID:', rawId);
-    // Decode ID if necessary - sometimes double encoding happens
     const id = rawId ? decodeURIComponent(rawId) : '';
-    console.log('Using decoded ID:', id);
 
     // Get language from cookies
     const cookieStore = await cookies();
     const language = cookieStore.get('language')?.value || 'en';
     const languageCode = language === 'ar' ? 'AR' : 'EN';
 
-    const productData = await getProductById(id, undefined, languageCode as 'AR' | 'EN');
-    console.log('Product Data result:', productData ? 'Found' : 'Null');
+    let productData;
+    try {
+        productData = await getProductById(id, undefined, languageCode as 'AR' | 'EN');
+    } catch {
+        // Network/server error after retries — show friendly error instead of 404
+        return (
+            <main className="min-h-screen flex items-center justify-center px-6" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <div className="text-center max-w-md">
+                    <h1 className="text-2xl font-bold text-accent mb-4">
+                        {language === 'ar' ? 'تعذّر تحميل المنتج' : 'Failed to load product'}
+                    </h1>
+                    <p className="text-gray-500 mb-8">
+                        {language === 'ar'
+                            ? 'يبدو أن الخادم يستيقظ، يرجى الانتظار لحظة والمحاولة مجدداً.'
+                            : 'The server is warming up. Please wait a moment and try again.'}
+                    </p>
+                    <a
+                        href={`/products/${rawId}`}
+                        className="inline-block px-8 py-3 bg-accent text-white rounded-sm hover:bg-accent/90 transition-colors font-medium"
+                    >
+                        {language === 'ar' ? 'حاول مرة أخرى' : 'Try Again'}
+                    </a>
+                </div>
+            </main>
+        );
+    }
 
     if (!productData) {
-        notFound(); // This will show the 404 page if product is not found
+        notFound(); // Product genuinely doesn't exist
     }
 
     const product = productData;

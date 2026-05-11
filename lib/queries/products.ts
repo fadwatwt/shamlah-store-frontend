@@ -54,9 +54,15 @@ export const GET_PRODUCTS = `
           attributes {
             attribute {
               name
+              translation(languageCode: $languageCode) {
+                name
+              }
             }
             values {
               name
+              translation(languageCode: $languageCode) {
+                name
+              }
             }
           }
         }
@@ -242,9 +248,15 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
           attribute {
             name
             slug
+            translation(languageCode: ${languageCode}) {
+              name
+            }
           }
           values {
             name
+            translation(languageCode: ${languageCode}) {
+              name
+            }
           }
         }
       }
@@ -252,9 +264,15 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
         attribute {
           name
           slug
+          translation(languageCode: ${languageCode}) {
+            name
+          }
         }
         values {
           name
+          translation(languageCode: ${languageCode}) {
+            name
+          }
         }
       }
       category {
@@ -266,25 +284,17 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
 `;
 
 export async function getProductById(id: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
-  try {
-    console.log(`Fetching product with ID: ${id}, languageCode: ${languageCode}`);
-    const activeChannel = await getActiveChannel(channel);
-    const query = GET_PRODUCT_BY_ID(languageCode);
-    const data = await request<ProductResponse>(query, { id, channel: activeChannel });
-    console.log(`Fetched product data:`, data.product ? 'Found' : 'Not Found');
-    return data.product;
-  } catch (error: unknown) {
-    const err = error as any;
-    console.error('Error fetching product by ID:', error);
-    if (err?.code !== 'ECONNREFUSED' && process.env.NODE_ENV === 'development') {
-      console.warn('Failed to fetch product from Saleor:', err?.message || 'Unknown error');
-    }
-    return null;
-  }
+  console.log(`Fetching product with ID: ${id}, languageCode: ${languageCode}`);
+  const activeChannel = await getActiveChannel(channel);
+  const query = GET_PRODUCT_BY_ID(languageCode);
+  // Let network errors propagate — caller decides between notFound() vs error page
+  const data = await request<ProductResponse>(query, { id, channel: activeChannel });
+  console.log(`Fetched product data:`, data.product ? 'Found' : 'Not Found');
+  return data.product; // null = product genuinely doesn't exist
 }
 
 export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
-  query GetProductsByCategory($first: Int, $channel: String, $categoryId: ID) {
+  query GetProductsByCategory($first: Int, $channel: String, $categoryId: ID!) {
     products(first: $first, channel: $channel, filter: { categories: [$categoryId] }) {
       edges {
         node {
@@ -323,12 +333,11 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
             preorder {
               endDate
             }
-            }
             pricing {
               price {
                 gross {
-                   amount
-                   currency
+                  amount
+                  currency
                 }
               }
             }
@@ -337,9 +346,15 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
           attributes {
             attribute {
               name
+              translation(languageCode: ${languageCode}) {
+                name
+              }
             }
             values {
               name
+              translation(languageCode: ${languageCode}) {
+                name
+              }
             }
           }
         }
@@ -446,10 +461,16 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
             attribute {
               name
               slug
+              translation(languageCode: $languageCode) {
+                name
+              }
             }
             values {
               name
               slug
+              translation(languageCode: $languageCode) {
+                name
+              }
             }
           }
         }

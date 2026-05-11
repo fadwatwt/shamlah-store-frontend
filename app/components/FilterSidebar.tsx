@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -8,6 +8,17 @@ interface FilterSidebarProps {
     mobileFiltersOpen: boolean;
     setMobileFiltersOpen: (open: boolean) => void;
     categorySlug?: string;
+}
+
+type LocalFilters = Record<string, string[]>;
+
+function parseParams(params: ReturnType<typeof useSearchParams>): LocalFilters {
+    const result: LocalFilters = {};
+    params.forEach((value, key) => {
+        if (!result[key]) result[key] = [];
+        result[key].push(value);
+    });
+    return result;
 }
 
 export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug }: FilterSidebarProps) {
@@ -18,12 +29,10 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
     const isClothing = !categorySlug || categorySlug.includes('clothing') || categorySlug.includes('apparel') || categorySlug === 'default';
     const isBags = categorySlug?.includes('bag') || categorySlug?.includes('accessories');
 
-    // Filter Options
     const filters = {
         availability: [
             { id: 'IN_STOCK', name: { en: 'In stock', ar: 'متوفر الآن' } },
             { id: 'OUT_OF_STOCK', name: { en: 'Out of stock', ar: 'نفد من المخزون' } },
-            // 'Coming soon' is handled as an attribute usually, but user asked for it in Availability context
             { id: 'attribute:availability:coming-soon', name: { en: 'Coming soon / Back in stock', ar: 'متوفر قريبًا' } },
         ],
         sizes: isBags
@@ -35,12 +44,10 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             { id: 'unisex', name: { en: 'Unisex', ar: 'لكلا الجنسين' } },
         ],
         features: [
-            // Common
             { id: 'lightweight', name: { en: 'Lightweight', ar: 'خفيف الوزن' } },
             { id: 'versatile', name: { en: 'Versatile', ar: 'متعدد الاستخدامات' } },
             { id: 'water-resistant', name: { en: 'Water-resistant', ar: 'مقاوم للماء' } },
             { id: 'easy-care', name: { en: 'Easy care', ar: 'سهل العناية' } },
-            // Clothing Specific
             ...(isClothing && !isBags ? [
                 { id: 'breathable', name: { en: 'Breathable', ar: 'قابل للتنفس' } },
                 { id: 'wrinkle-resistant', name: { en: 'Wrinkle-resistant', ar: 'لا يتجعّد / مقاوم للتجعّد' } },
@@ -48,7 +55,6 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 { id: 'non-see-through', name: { en: 'Non-see-through', ar: 'غير شفّاف' } },
                 { id: 'lined', name: { en: 'Lined', ar: 'مبطن' } },
             ] : []),
-            // Bag Specific
             ...(isBags ? [
                 { id: 'multiple-pockets', name: { en: 'Multiple pockets', ar: 'جيوب متعددة' } },
                 { id: 'adjustable-strap', name: { en: 'Adjustable strap', ar: 'حزام قابل للتعديل' } },
@@ -65,9 +71,15 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         features: false,
     });
 
-    // Local state for filters to allow batch applying or instant apply
-    // For sidebar UX, often instant apply is expected on desktop, but apply button on mobile. 
-    // Let's implement instant apply for now via URL updates.
+    // Optimistic local filter state — updates immediately on click
+    const [localFilters, setLocalFilters] = useState<LocalFilters>(() => parseParams(searchParams));
+
+    // Sync local state when URL params change (e.g. browser back/forward, external navigation)
+    const paramsKey = searchParams.toString();
+    useEffect(() => {
+        setLocalFilters(parseParams(searchParams));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [paramsKey]);
 
     const [priceMin, setPriceMin] = useState(searchParams.get('minPrice') || '');
     const [priceMax, setPriceMax] = useState(searchParams.get('maxPrice') || '');
@@ -75,70 +87,64 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
     useEffect(() => {
         setPriceMin(searchParams.get('minPrice') || '');
         setPriceMax(searchParams.get('maxPrice') || '');
-    }, [searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [paramsKey]);
 
     const toggleSection = (section: keyof typeof expandedSections) => {
         setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const updateFilter = (key: string, value: string, checked: boolean) => {
-        const params = new URLSearchParams(searchParams.toString());
-        const current = params.getAll(key);
+    const isChecked = useCallback((key: string, value: string) => {
+        return localFilters[key]?.includes(value) ?? false;
+    }, [localFilters]);
 
-        if (checked) {
-            if (!current.includes(value)) {
-                params.append(key, value);
+    // Only updates local UI state — no request sent until "View Results"
+    const updateFilter = useCallback((key: string, value: string, checked: boolean) => {
+        setLocalFilters(prev => {
+            const current = prev[key] ?? [];
+            if (checked) {
+                if (current.includes(value)) return prev;
+                return { ...prev, [key]: [...current, value] };
+            } else {
+                const next = current.filter(v => v !== value);
+                if (next.length === 0) {
+                    const copy = { ...prev };
+                    delete copy[key];
+                    return copy;
+                }
+                return { ...prev, [key]: next };
             }
-        } else {
-            params.delete(key);
-            current.filter(v => v !== value).forEach(v => params.append(key, v));
-        }
+        });
+    }, []);
 
-        // Reset page on filter change
-        params.delete('page');
-
+    // Applies all pending localFilters + price to the URL (triggers server fetch)
+    const applyFilters = useCallback(() => {
+        const params = new URLSearchParams();
+        Object.entries(localFilters).forEach(([key, values]) => {
+            values.forEach(v => params.append(key, v));
+        });
+        if (priceMin) params.set('minPrice', priceMin);
+        if (priceMax) params.set('maxPrice', priceMax);
         router.push(`?${params.toString()}`, { scroll: false });
-    };
-
-    const updatePrice = () => {
-        const params = new URLSearchParams(searchParams.toString());
-        if (priceMin) params.set('minPrice', priceMin); else params.delete('minPrice');
-        if (priceMax) params.set('maxPrice', priceMax); else params.delete('maxPrice');
-        params.delete('page');
-        router.push(`?${params.toString()}`, { scroll: false });
-    };
-
-    const handlePriceKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            updatePrice();
-        }
-    };
+        setMobileFiltersOpen(false);
+    }, [localFilters, priceMin, priceMax, router, setMobileFiltersOpen]);
 
     const clearAll = () => {
+        setLocalFilters({});
+        setPriceMin('');
+        setPriceMax('');
         router.push(window.location.pathname, { scroll: false });
     };
 
-    const isChecked = (key: string, value: string) => {
-        return searchParams.getAll(key).includes(value);
-    };
-
-    // Helper to render size label
     const renderSizeLabel = (size: string) => {
         if (language === 'ar') {
             switch (size.toLowerCase()) {
                 case 'small': return 'صغير';
                 case 'medium': return 'وسط';
                 case 'large': return 'كبير';
-                case 'xs': return 'XS';
-                case 's': return 'S';
-                case 'm': return 'M';
-                case 'l': return 'L';
-                case 'xl': return 'XL';
-                case 'xxl': return 'XXL';
                 default: return size.toUpperCase();
             }
         }
-        // Capitalize specific bag sizes, uppercase otherwise (for clothing codes like XS, S, M)
         if (isBags || ['small', 'medium', 'large'].includes(size.toLowerCase())) {
             return size.charAt(0).toUpperCase() + size.slice(1);
         }
@@ -172,69 +178,60 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
 
                 {/* Availability Filter */}
                 <div className="border-b border-gray-100 pb-6">
-                    <button
-                        onClick={() => toggleSection('availability')}
-                        className="flex items-center justify-between w-full mb-4 group"
-                    >
+                    <button onClick={() => toggleSection('availability')} className="flex items-center justify-between w-full mb-4 group">
                         <span className="font-semibold text-gray-800">{language === 'ar' ? 'التوفر' : 'Availability'}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.availability ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {expandedSections.availability && (
                         <div className="space-y-3">
-                            {filters.availability.map((item) => (
-                                <label key={item.id} className="flex items-center gap-3 cursor-pointer group">
-                                    <input
-                                        type="checkbox"
-                                        checked={isChecked(item.id.includes('attribute') ? 'attributes' : 'stockStatus', item.id)}
-                                        onChange={(e) => updateFilter(item.id.includes('attribute') ? 'attributes' : 'stockStatus', item.id, e.target.checked)}
-                                        className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
-                                    />
-                                    <span className="text-gray-600 group-hover:text-accent transition-colors">
-                                        {language === 'ar' ? item.name.ar : item.name.en}
-                                    </span>
-                                </label>
-                            ))}
+                            {filters.availability.map((item) => {
+                                const key = item.id.includes('attribute') ? 'attributes' : 'stockStatus';
+                                return (
+                                    <label key={item.id} className="flex items-center gap-3 cursor-pointer group">
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked(key, item.id)}
+                                            onChange={(e) => updateFilter(key, item.id, e.target.checked)}
+                                            className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
+                                        />
+                                        <span className="text-gray-600 group-hover:text-accent transition-colors">
+                                            {language === 'ar' ? item.name.ar : item.name.en}
+                                        </span>
+                                    </label>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
 
                 {/* Price Filter */}
                 <div className="border-b border-gray-100 pb-6">
-                    <button
-                        onClick={() => toggleSection('price')}
-                        className="flex items-center justify-between w-full mb-4 group"
-                    >
+                    <button onClick={() => toggleSection('price')} className="flex items-center justify-between w-full mb-4 group">
                         <span className="font-semibold text-gray-800">{language === 'ar' ? 'السعر' : 'Price'}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.price ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {expandedSections.price && (
-                        <div>
-                            <div className="flex items-center gap-4 mb-3">
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
-                                    <input
-                                        type="number"
-                                        placeholder="Min"
-                                        value={priceMin}
-                                        onChange={(e) => setPriceMin(e.target.value)}
-                                        onKeyDown={handlePriceKeyDown}
-                                        onBlur={updatePrice}
-                                        className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
-                                    />
-                                </div>
-                                <span className="text-gray-400">-</span>
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
-                                    <input
-                                        type="number"
-                                        placeholder="Max"
-                                        value={priceMax}
-                                        onChange={(e) => setPriceMax(e.target.value)}
-                                        onKeyDown={handlePriceKeyDown}
-                                        onBlur={updatePrice}
-                                        className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
-                                    />
-                                </div>
+                        <div className="flex items-center gap-4 mb-3">
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
+                                <input
+                                    type="number"
+                                    placeholder="Min"
+                                    value={priceMin}
+                                    onChange={(e) => setPriceMin(e.target.value)}
+                                    className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                                />
+                            </div>
+                            <span className="text-gray-400">-</span>
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
+                                <input
+                                    type="number"
+                                    placeholder="Max"
+                                    value={priceMax}
+                                    onChange={(e) => setPriceMax(e.target.value)}
+                                    className="w-full pl-12 pr-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
+                                />
                             </div>
                         </div>
                     )}
@@ -242,10 +239,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
 
                 {/* Size Filter */}
                 <div className="border-b border-gray-100 pb-6">
-                    <button
-                        onClick={() => toggleSection('size')}
-                        className="flex items-center justify-between w-full mb-4 group"
-                    >
+                    <button onClick={() => toggleSection('size')} className="flex items-center justify-between w-full mb-4 group">
                         <span className="font-semibold text-gray-800">{language === 'ar' ? 'الحجم' : 'Size'}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.size ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
@@ -274,17 +268,13 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 {/* Features Filter */}
                 {filters.features.length > 0 && (
                     <div className="border-b border-gray-100 pb-6">
-                        <button
-                            onClick={() => toggleSection('features')}
-                            className="flex items-center justify-between w-full mb-4 group"
-                        >
+                        <button onClick={() => toggleSection('features')} className="flex items-center justify-between w-full mb-4 group">
                             <span className="font-semibold text-gray-800">{language === 'ar' ? 'الميزات' : 'Features'}</span>
                             <svg className={`w-4 h-4 transition-transform ${expandedSections.features ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                         </button>
                         {expandedSections.features && (
                             <div className="space-y-3">
                                 {filters.features.map((feature) => {
-                                    // Assuming 'features' is the attribute slug for features
                                     const value = `attribute:features:${feature.id}`;
                                     return (
                                         <label key={feature.id} className="flex items-center gap-3 cursor-pointer group">
@@ -307,10 +297,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
 
                 {/* Gender Filter */}
                 <div className="border-b border-gray-100 pb-6">
-                    <button
-                        onClick={() => toggleSection('gender')}
-                        className="flex items-center justify-between w-full mb-4 group"
-                    >
+                    <button onClick={() => toggleSection('gender')} className="flex items-center justify-between w-full mb-4 group">
                         <span className="font-semibold text-gray-800">{language === 'ar' ? 'الجنس' : 'Gender'}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.gender ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
@@ -345,7 +332,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         {language === 'ar' ? 'مسح الكل' : 'Clear All'}
                     </button>
                     <button
-                        onClick={() => setMobileFiltersOpen(false)}
+                        onClick={applyFilters}
                         className="flex-1 px-4 py-2 bg-accent text-white rounded text-sm hover:bg-[#5a1214]"
                     >
                         {language === 'ar' ? 'عرض النتائج' : 'View Results'}

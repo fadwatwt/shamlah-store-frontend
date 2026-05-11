@@ -1,14 +1,12 @@
+import { Suspense } from 'react';
 import { cookies } from 'next/headers';
-import { getProductsByCategoryIds, ProductFilters } from '@/lib/queries/products';
+import { getProductsByCategoryIds } from '@/lib/queries/products';
 import { getCategoryBySlug } from '@/lib/queries/categories';
 import { Product, Category } from '@/lib/types/saleor';
 import CategoryContent from '../../components/CategoryContent';
 
 interface CategoryPageProps {
-    params: Promise<{
-        slug: string;
-    }>;
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+    params: Promise<{ slug: string }>;
 }
 
 function transformSaleorProduct(product: Product, index: number) {
@@ -25,31 +23,53 @@ function transformSaleorProduct(product: Product, index: number) {
         id: product.id,
         name: product.name,
         price: Math.round(price),
-        image: image,
+        image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
         isBestSeller: index < 2,
         quantityAvailable,
         isPreorder,
         attributes: product.attributes,
-        variants: product.variants
+        variants: product.variants,
     };
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
     const { slug } = await params;
-    const resolvedSearchParams = await searchParams;
 
-    // Get language from cookies
     const cookieStore = await cookies();
     const language = cookieStore.get('language')?.value || 'en';
     const languageCode = language === 'ar' ? 'AR' : 'EN';
 
-    // Fetch the category by slug with language support
-    const category = await getCategoryBySlug(slug, languageCode as 'AR' | 'EN');
+    // Fetch category
+    let category;
+    try {
+        category = await getCategoryBySlug(slug, languageCode as 'AR' | 'EN');
+    } catch {
+        return (
+            <main className="pt-32 pb-24 px-6 min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+                <div className="container mx-auto text-center max-w-md">
+                    <h1 className="text-2xl font-bold text-accent mb-4">
+                        {language === 'ar' ? 'تعذّر تحميل الفئة' : 'Failed to load category'}
+                    </h1>
+                    <p className="text-gray-500 mb-8">
+                        {language === 'ar'
+                            ? 'يبدو أن الخادم يستيقظ، يرجى الانتظار لحظة والمحاولة مجدداً.'
+                            : 'The server is warming up. Please wait a moment and try again.'}
+                    </p>
+                    <a
+                        href={`/category/${slug}`}
+                        className="inline-block px-8 py-3 bg-accent text-white rounded-sm hover:bg-accent/90 transition-colors font-medium"
+                    >
+                        {language === 'ar' ? 'حاول مرة أخرى' : 'Try Again'}
+                    </a>
+                </div>
+            </main>
+        );
+    }
 
     if (!category) {
         return (
-            <main className="pt-32 pb-24 px-6 min-h-screen md:px-24">
+            <main className="pt-32 pb-24 px-6 min-h-screen">
                 <div className="container mx-auto text-center">
                     <h1 className="text-3xl font-bold text-accent mb-4">Category Not Found</h1>
                     <p className="text-gray-600">The category you&apos;re looking for doesn&apos;t exist.</p>
@@ -58,92 +78,31 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         );
     }
 
+    // Collect category + subcategory IDs
+    const categoryIds = [category.id];
+    const collectIds = (cat: Category) => {
+        cat.children?.edges?.forEach((edge) => {
+            categoryIds.push(edge.node.id);
+            collectIds(edge.node as unknown as Category);
+        });
+    };
+    collectIds(category);
+
+    // Fetch ALL products once — filtering happens client-side instantly
     let products: ReturnType<typeof transformSaleorProduct>[] = [];
-
     try {
-        // Create explicit array of IDs to fetch
-        const categoryIds = [category.id];
-
-        // Helper to collect IDs recursively
-        const collectCategoryIds = (cat: Category) => {
-            if (cat.children?.edges && cat.children.edges.length > 0) {
-                cat.children.edges.forEach((edge) => {
-                    categoryIds.push(edge.node.id);
-                    // Cast node to Category for recursion as node shape matches
-                    collectCategoryIds(edge.node as unknown as Category);
-                });
-            }
-        };
-
-        collectCategoryIds(category);
-
-        // Parse Filter Params
-        const filters: ProductFilters = {
-            categoryIds: categoryIds,
-        };
-
-        // Price
-        const minPrice = resolvedSearchParams.minPrice ? Number(resolvedSearchParams.minPrice) : undefined;
-        const maxPrice = resolvedSearchParams.maxPrice ? Number(resolvedSearchParams.maxPrice) : undefined;
-        if (minPrice !== undefined || maxPrice !== undefined) {
-            filters.price = { min: minPrice, max: maxPrice };
-        }
-
-        // Stock Status
-        const stockStatus = resolvedSearchParams.stockStatus;
-        if (stockStatus && (stockStatus === 'IN_STOCK' || stockStatus === 'OUT_OF_STOCK')) {
-            filters.stockStatus = stockStatus as 'IN_STOCK' | 'OUT_OF_STOCK';
-        }
-
-        // Attributes
-        const rawAttributes = resolvedSearchParams.attributes;
-        if (rawAttributes) {
-            const attrArray = Array.isArray(rawAttributes) ? rawAttributes : [rawAttributes];
-            const attributeMap = new Map<string, string[]>();
-
-            attrArray.forEach(attrStr => {
-                if (attrStr.startsWith('attribute:')) {
-                    // Format: attribute:slug:value
-                    const parts = attrStr.split(':');
-                    if (parts.length >= 3) {
-                        const slug = parts[1];
-                        const value = parts.slice(2).join(':'); // Rejoin rest in case value has colons
-
-                        if (!attributeMap.has(slug)) {
-                            attributeMap.set(slug, []);
-                        }
-                        attributeMap.get(slug)?.push(value);
-                    }
-                }
-            });
-
-            if (attributeMap.size > 0) {
-                filters.attributes = Array.from(attributeMap.entries()).map(([slug, values]) => ({
-                    slug,
-                    values
-                }));
-            }
-        }
-
-        console.log(`[CategoryPage] Fetching products with filters:`, JSON.stringify(filters, null, 2));
-
         const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
-
-        // Use the new optimized query to fetch products for all categories at once with filters
-        const allProducts = await getProductsByCategoryIds(filters, 100, channel);
-
-        // Deduplicate just in case (though API should handle this, product might be in multiple subcats)
-        const uniqueProducts = Array.from(
-            new Map((allProducts as Product[]).map(p => [p.id, p])).values()
-        );
-
-        products = uniqueProducts.map((product, index) => transformSaleorProduct(product, index));
-        console.log(`[CategoryPage] Total unique products found: ${products.length} in channel ${channel}`);
+        const allProducts = await getProductsByCategoryIds({ categoryIds }, 100, channel, languageCode as 'AR' | 'EN');
+        const unique = Array.from(new Map((allProducts as Product[]).map(p => [p.id, p])).values());
+        products = unique.map((p, i) => transformSaleorProduct(p, i));
     } catch (error) {
-        console.error('Error fetching products:', error);
-        products = [];
+        console.error('[CategoryPage] Error fetching products:', error);
     }
 
-    const channelUsed = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
-    return <CategoryContent category={category} initialProducts={products} channel={channelUsed} />;
+    const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+    return (
+        <Suspense fallback={null}>
+            <CategoryContent category={category} initialProducts={products} channel={channel} />
+        </Suspense>
+    );
 }

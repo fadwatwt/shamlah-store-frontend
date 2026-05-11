@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
@@ -35,13 +36,24 @@ export default function ProductCard({
     isPreorder = false,
     attributes = [],
     variants = [],
-    colors = ['#1a1a1a', '#2f3e46', '#79272C'] // Default mock colors matching the image style
-}: ProductCardProps & { colors?: string[] }) {
+}: ProductCardProps) {
     const { language, t } = useLanguage();
+    const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart } = useCart();
 
     const [addingToCart, setAddingToCart] = useState(false);
+
+    const productColors = useMemo(() => {
+        const colorAttr = attributes?.find(a => {
+            const name = a.attribute.name?.toLowerCase();
+            return name === 'color' || name === 'colors' || name === 'اللون' || name === 'ألوان';
+        });
+        if (!colorAttr) return [];
+        return colorAttr.values
+            .map(v => v.name)
+            .filter(hex => /^#[0-9a-f]{3,8}$/i.test(hex));
+    }, [attributes]);
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -65,8 +77,8 @@ export default function ProductCard({
                 setAddingToCart(false);
             }
         } else {
-            // Fallback: Redirect to product page if no variant found (shouldn't happen with valid data)
-            window.location.href = `/products/${id}`;
+            // Fallback: Soft-navigate to product page if no variant found — preserves layout state
+            router.push(`/products/${id}`);
         }
     };
 
@@ -222,23 +234,25 @@ export default function ProductCard({
 
                     {/* Price */}
                     <p className="text-xl text-center font-semibold text-accent mb-3">
-                        {Math.round(price)} {t.common.currency}
+                        {language === 'ar'
+                            ? `${Math.round(price)} ${t.common.currency}`
+                            : `$${Math.round(price)}`}
                     </p>
 
                     {/* Colors */}
-                    <div className='flex justify-center'>
-                        {colors && colors.length > 0 && (
+                    {productColors.length > 0 && (
+                        <div className="flex justify-center">
                             <div className="flex items-center gap-2">
-                                {colors.map((color, idx) => (
+                                {productColors.map((hex, idx) => (
                                     <div
                                         key={idx}
                                         className="w-5 h-5 rounded-full border border-gray-200"
-                                        style={{ backgroundColor: color }}
+                                        style={{ backgroundColor: hex }}
                                     />
                                 ))}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </Link>
         </div>
