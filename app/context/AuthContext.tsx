@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerAccount, getCurrentUser, RegisterInput } from '@/lib/queries/auth';
+import { loginUser, registerAccount, getCurrentUser, RegisterInput, getExternalAuthUrl, obtainExternalAccessTokens } from '@/lib/queries/auth';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -30,6 +30,8 @@ interface AuthContextType {
     isAuthenticated: boolean;
     login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
     register: (input: RegisterInput) => Promise<{ success: boolean; error?: string }>;
+    loginWithGoogle: () => Promise<void>;
+    handleGoogleCallback: (code: string, state: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
 }
 
@@ -120,6 +122,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const loginWithGoogle = async () => {
+        try {
+            const redirectUri = `${window.location.origin}/callback`;
+            const data = await getExternalAuthUrl(redirectUri);
+            
+            if (data.externalAuthenticationUrl?.errors?.length > 0) {
+                console.error('Failed to get Google Auth URL:', data.externalAuthenticationUrl.errors);
+                return;
+            }
+
+            const authDataString = data.externalAuthenticationUrl?.authenticationData;
+            if (authDataString) {
+                const authData = JSON.parse(authDataString);
+                if (authData.authorizationUrl) {
+                    window.location.href = authData.authorizationUrl;
+                }
+            }
+        } catch (error) {
+            console.error('Error initiating Google login:', error);
+        }
+    };
+
+    const handleGoogleCallback = async (code: string, state: string) => {
+        try {
+            const data = await obtainExternalAccessTokens(code, state);
+            
+            if (data.externalObtainAccessTokens?.errors?.length > 0) {
+                return { success: false, error: data.externalObtainAccessTokens.errors[0].message };
+            }
+
+            const { token, user: authUser } = data.externalObtainAccessTokens || {};
+            
+            if (token) {
+                localStorage.setItem('token', token);
+                
+                // Fetch full user data including addresses etc
+                const userData = await getCurrentUser(token);
+                if (userData?.me) {
+                    setUser(userData.me);
+                } else if (authUser) {
+                    // Fallback to basic user data if full fetch fails
+                    setUser(authUser as User);
+                }
+                
+                router.push('/');
+                return { success: true };
+            }
+
+            return { success: false, error: 'Failed to obtain access token' };
+        } catch (error: any) {
+            console.error('Google callback error:', error);
+            return { success: false, error: error.message || 'An unexpected error occurred' };
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         setUser(null);
@@ -127,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, logout }}>
+        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, loginWithGoogle, handleGoogleCallback, logout }}>
             {children}
         </AuthContext.Provider>
     );

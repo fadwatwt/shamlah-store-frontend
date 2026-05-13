@@ -36,7 +36,9 @@ export const translations = {
         },
         header: {
             freeShipping: 'شحن مجاني للطلبات فوق 500 ريال',
-            searchPlaceholder: 'ابحث في الموقع...',
+            searchPlaceholder: 'ابحث عن منتجات...',
+            searchTitle: 'البحث في الموقع',
+            searchSubtitle: 'ابحث عن الحقائب، الملابس، الإكسسوارات والمزيد...',
             cart: 'السلة',
             favorites: 'المفضلة',
             account: 'الحساب',
@@ -310,7 +312,9 @@ export const translations = {
         },
         header: {
             freeShipping: 'Free shipping for orders over 500 SAR',
-            searchPlaceholder: 'Search...',
+            searchPlaceholder: 'Search for products...',
+            searchTitle: 'Search the Site',
+            searchSubtitle: 'Search for bags, clothing, accessories and more...',
             cart: 'Cart',
             favorites: 'Favorites',
             account: 'Account',

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { translations, Language } from '../utils/translations';
 
 type LanguageContextType = {
@@ -8,6 +9,7 @@ type LanguageContextType = {
     setLanguage: (lang: Language) => void;
     t: typeof translations.en;
     dir: 'rtl' | 'ltr';
+    isChangingLanguage: boolean;
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -18,6 +20,8 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageProviderProps) {
+    const router = useRouter();
+    const [isPending, startTransition] = useTransition();
     const [language, setLanguageState] = useState<Language>(initialLanguage);
 
     // On mount, sync localStorage → cookie. If they differ from server, update state.
@@ -44,17 +48,32 @@ export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageP
         document.cookie = `language=${lang};path=/;max-age=${60 * 60 * 24 * 30}`;
         document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
         document.documentElement.lang = lang;
-        window.location.reload();
+        
+        startTransition(() => {
+            router.refresh();
+        });
     };
 
     const t = translations[language];
     const dir = language === 'ar' ? 'rtl' : 'ltr';
 
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t, dir }}>
-            <div className={language === 'ar' ? 'font-sans-ar' : 'font-sans-en'}>
+        <LanguageContext.Provider value={{ language, setLanguage, t, dir, isChangingLanguage: isPending }}>
+            <div className={language === 'ar' ? 'font-sans-ar text-right' : 'font-sans-en text-left'}>
                 {children}
             </div>
+            
+            {/* Loading overlay during language change */}
+            {isPending && (
+                <div className="fixed inset-0 z-[9999] bg-white/60 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-200">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-accent font-bold">
+                            {language === 'ar' ? 'جاري التحديث...' : 'Updating...'}
+                        </p>
+                    </div>
+                </div>
+            )}
         </LanguageContext.Provider>
     );
 }

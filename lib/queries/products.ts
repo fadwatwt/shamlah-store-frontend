@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { ProductsResponse, ProductResponse, ChannelsResponse } from '../types/saleor';
 import { request } from '../saleor-client';
 
@@ -158,7 +159,7 @@ async function getActiveChannel(providedChannel?: string): Promise<string> {
   return 'default-channel';
 }
 
-export async function getProducts(first: number = 100, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
+export const getProducts = cache(async function (first: number = 100, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
     const data = await request<ProductsResponse>(GET_PRODUCTS, { first, channel: activeChannel, languageCode });
@@ -176,9 +177,9 @@ export async function getProducts(first: number = 100, channel: string = 'defaul
     }
     return [];
   }
-}
+});
 
-export async function getProductBySlug(slug: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
+export const getProductBySlug = cache(async function (slug: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
     const data = await request<ProductResponse>(GET_PRODUCT_BY_SLUG, { slug, channel: activeChannel, languageCode });
@@ -191,7 +192,7 @@ export async function getProductBySlug(slug: string, channel: string = 'default-
     }
     return null;
   }
-}
+});
 
 export const GET_PRODUCT_BY_ID = (languageCode: string) => `
   query GetProductById($id: ID!, $channel: String) {
@@ -271,7 +272,7 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
   }
 `;
 
-export async function getProductById(id: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
+export const getProductById = cache(async function (id: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   console.log(`Fetching product with ID: ${id}, languageCode: ${languageCode}`);
   const activeChannel = await getActiveChannel(channel);
   const query = GET_PRODUCT_BY_ID(languageCode);
@@ -279,7 +280,7 @@ export async function getProductById(id: string, channel: string = 'default-chan
   const data = await request<ProductResponse>(query, { id, channel: activeChannel });
   console.log(`Fetched product data:`, data.product ? 'Found' : 'Not Found');
   return data.product; // null = product genuinely doesn't exist
-}
+});
 
 export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
   query GetProductsByCategory($first: Int, $channel: String, $categoryId: ID!) {
@@ -351,7 +352,7 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
   }
 `;
 
-export async function getProductsByCategory(
+export const getProductsByCategory = cache(async function (
   categoryId: string,
   first: number = 20,
   channel: string = 'default-channel',
@@ -377,7 +378,7 @@ export async function getProductsByCategory(
     }
     return [];
   }
-}
+});
 
 export const GET_PRODUCTS_BY_CATEGORY_IDS = `
   query GetProductsByCategoryIds($first: Int, $channel: String, $filter: ProductFilterInput, $languageCode: LanguageCodeEnum!) {
@@ -468,7 +469,7 @@ export interface ProductFilters {
   attributes?: Array<{ slug: string; values: string[] }>;
 }
 
-export async function getProductsByCategoryIds(
+export const getProductsByCategoryIds = cache(async function (
   filters: ProductFilters | string[], // Backwards compatibility: allow string[] as categoryIds
   first: number = 100,
   channel: string = 'default-channel',
@@ -522,4 +523,4 @@ export async function getProductsByCategoryIds(
     }
     return [];
   }
-}
+});

@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { CategoriesResponse, CategoryResponse } from '../types/saleor';
 import { request } from '../saleor-client';
 
@@ -35,7 +36,7 @@ const getCategoriesQuery = (languageCode: string) => `
   }
 `;
 
-export async function getCategories(languageCode: 'AR' | 'EN' = 'EN') {
+export const getCategories = cache(async function (languageCode: 'AR' | 'EN' = 'EN') {
   try {
     console.log('Fetching categories with languageCode:', languageCode);
     const query = getCategoriesQuery(languageCode);
@@ -47,7 +48,7 @@ export async function getCategories(languageCode: 'AR' | 'EN' = 'EN') {
     console.error('Error fetching categories:', err?.message || 'Unknown error');
     return [];
   }
-}
+});
 
 const getCategoryBySlugQuery = (languageCode: string) => `
   query GetCategoryBySlug($slug: String!) {

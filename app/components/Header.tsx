@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -8,13 +8,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { useCategoriesContext } from '../context/CategoriesContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import SearchModal from './SearchModal';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
   const { language, t, dir } = useLanguage();
   const categories = useCategoriesContext();
   const { items: wishlistItems } = useWishlist();
@@ -28,30 +26,7 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Focus the input as soon as it appears
-  useEffect(() => {
-    if (searchOpen) {
-      const t = setTimeout(() => searchInputRef.current?.focus(), 100);
-      return () => clearTimeout(t);
-    }
-  }, [searchOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!searchOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSearchOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [searchOpen]);
-
-  const submitSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    if (!q) return;
-    router.push(`/products?search=${encodeURIComponent(q)}`);
-    setSearchOpen(false);
-    setSearchQuery('');
-  };
+  // Search modal state handled entirely via SearchModal now
 
   // Map Saleor categories to nav structure
   const navLinks = categories.map(category => {
@@ -153,33 +128,17 @@ export default function Header() {
 
         {/* Action Icons */}
         <div className="flex items-center gap-6">
-          {/* Search — expanding inline field */}
-          <form onSubmit={submitSearch} className="flex items-center">
-            <div
-              className={`overflow-hidden smooth-transition ${searchOpen ? 'w-44 md:w-64 opacity-100 me-2' : 'w-0 opacity-0'}`}
-            >
-              <input
-                ref={searchInputRef}
-                type="search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onBlur={() => { if (!searchQuery) setSearchOpen(false); }}
-                placeholder={t.header.searchPlaceholder}
-                className="w-full bg-transparent border-b border-gray-400 focus:border-accent outline-none py-1 px-1 text-sm text-gray-800 placeholder-gray-400"
-                aria-label={t.header.searchPlaceholder}
-              />
-            </div>
-            <button
-              type={searchOpen ? 'submit' : 'button'}
-              onClick={() => { if (!searchOpen) setSearchOpen(true); }}
-              aria-label={t.header.searchPlaceholder}
-              className="smooth-transition hover:text-accent text-gray-700"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
-              </svg>
-            </button>
-          </form>
+          {/* Search Button */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label={t.header.searchTitle}
+            className="smooth-transition hover:text-accent text-gray-700"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+            </svg>
+          </button>
 
           <Link
             href="/cart"
@@ -250,6 +209,9 @@ export default function Header() {
           </Link>
         </div>
       </div>
-    </header >
+
+      {/* Search Modal */}
+      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+    </header>
   );
 }

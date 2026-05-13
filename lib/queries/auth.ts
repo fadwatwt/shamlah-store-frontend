@@ -61,6 +61,37 @@ export const CURRENT_USER = gql`
   }
 `;
 
+export const EXTERNAL_AUTHENTICATION_URL = gql`
+  mutation ExternalAuthenticationUrl($pluginId: String!, $input: JSONString!) {
+    externalAuthenticationUrl(pluginId: $pluginId, input: $input) {
+      authenticationData
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const EXTERNAL_OBTAIN_ACCESS_TOKENS = gql`
+  mutation ExternalObtainAccessTokens($pluginId: String!, $input: JSONString!) {
+    externalObtainAccessTokens(pluginId: $pluginId, input: $input) {
+      token
+      refreshToken
+      user {
+        id
+        email
+        firstName
+        lastName
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export interface RegisterInput {
   email: string;
   password: string;
@@ -133,5 +164,21 @@ export async function loginUser(email: string, password: string) {
 export async function getCurrentUser(token: string) {
   return request<UserResponse>(CURRENT_USER, undefined, {
     Authorization: `Bearer ${token}`,
+  });
+}
+
+export async function getExternalAuthUrl(redirectUri: string) {
+  const input = JSON.stringify({ redirectUri });
+  return request<any>(EXTERNAL_AUTHENTICATION_URL, {
+    pluginId: "mirumee.authentication.openidconnect",
+    input,
+  });
+}
+
+export async function obtainExternalAccessTokens(code: string, state: string) {
+  const input = JSON.stringify({ code, state });
+  return request<any>(EXTERNAL_OBTAIN_ACCESS_TOKENS, {
+    pluginId: "mirumee.authentication.openidconnect",
+    input,
   });
 }

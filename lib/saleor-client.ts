@@ -6,6 +6,8 @@ const getSaleorApiUrl = () => {
 
 export const saleorClient = new GraphQLClient(getSaleorApiUrl(), {
   headers: { 'Content-Type': 'application/json' },
+  // Cache data for 60 seconds to reduce database load
+  fetch: (url, config) => fetch(url, { ...config, next: { revalidate: 60 } }),
 });
 
 // 2 retries after first failure (3 total), 2s then 4s delay
