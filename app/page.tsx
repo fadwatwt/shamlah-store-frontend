@@ -13,13 +13,21 @@ function transformSaleorProduct(product: Product) {
   const quantityAvailable = product.variants?.reduce((acc, variant) => acc + (variant.quantityAvailable || 0), 0) || 0;
   const isPreorder = product.variants?.some(variant => variant.preorder?.endDate) || false;
 
+  const isBestSellerAttr = product.attributes?.find(a => 
+    a.attribute.name.toLowerCase() === 'best seller' || 
+    a.attribute.name === 'الأكثر مبيعاً'
+  );
+  const isBestSeller = isBestSellerAttr?.values?.some(v => 
+    v.name.toLowerCase() === 'yes' || v.name.toLowerCase() === 'true' || v.name === 'نعم'
+  ) || false;
+
   return {
     id: product.id,
     name: product.name,
     price: Math.round(price),
     image: image,
     rating: 5,
-    isBestSeller: true,
+    isBestSeller,
     quantityAvailable,
     isPreorder,
     attributes: product.attributes,
@@ -44,7 +52,7 @@ export default async function Home() {
         price: 450,
         image: 'https://placehold.co/400x500/79272C/white?text=حقيبة+فاخرة',
         rating: 5,
-        isBestSeller: true,
+        isBestSeller: false,
         quantityAvailable: 10,
         isPreorder: false,
       },
@@ -54,7 +62,7 @@ export default async function Home() {
         price: 380,
         image: 'https://placehold.co/400x500/79272C/white?text=ثوب',
         rating: 5,
-        isBestSeller: true,
+        isBestSeller: false,
         quantityAvailable: 10,
         isPreorder: false,
       },
@@ -64,7 +72,7 @@ export default async function Home() {
         price: 220,
         image: 'https://placehold.co/400x500/79272C/white?text=اكسسوارات',
         rating: 5,
-        isBestSeller: true,
+        isBestSeller: false,
         quantityAvailable: 10,
         isPreorder: false,
       },
@@ -74,7 +82,7 @@ export default async function Home() {
         price: 520,
         image: 'https://placehold.co/400x500/79272C/white?text=حقيبة',
         rating: 5,
-        isBestSeller: true,
+        isBestSeller: false,
         quantityAvailable: 10,
         isPreorder: false,
       },

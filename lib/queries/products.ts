@@ -55,9 +55,12 @@ export const GET_PRODUCTS = `
           attributes {
             attribute {
               name
+              slug
             }
             values {
               name
+              slug
+              richText
             }
           }
         }
@@ -259,6 +262,7 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
         }
         values {
           name
+          richText
           translation(languageCode: ${languageCode}) {
             name
           }
@@ -335,9 +339,12 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
           attributes {
             attribute {
               name
+              slug
             }
             values {
               name
+              slug
+              richText
             }
           }
         }

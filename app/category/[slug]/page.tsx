@@ -19,13 +19,21 @@ function transformSaleorProduct(product: Product, index: number) {
     const quantityAvailable = product.variants?.reduce((acc, variant) => acc + (variant.quantityAvailable || 0), 0) || 0;
     const isPreorder = product.variants?.some(variant => variant.preorder?.endDate) || false;
 
+    const isBestSellerAttr = product.attributes?.find(a => 
+        a.attribute.name.toLowerCase() === 'best seller' || 
+        a.attribute.name === 'الأكثر مبيعاً'
+    );
+    const isBestSeller = isBestSellerAttr?.values?.some(v => 
+        v.name.toLowerCase() === 'yes' || v.name.toLowerCase() === 'true' || v.name === 'نعم'
+    ) || false;
+
     return {
         id: product.id,
         name: product.name,
         price: Math.round(price),
         image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
-        isBestSeller: index < 2,
+        isBestSeller,
         quantityAvailable,
         isPreorder,
         attributes: product.attributes,

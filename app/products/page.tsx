@@ -13,13 +13,21 @@ function transformSaleorProduct(product: Product) {
     const quantityAvailable = product.variants?.reduce((acc, variant) => acc + (variant.quantityAvailable || 0), 0) || 0;
     const isPreorder = product.variants?.some(variant => variant.preorder?.endDate) || false;
 
+    const isBestSellerAttr = product.attributes?.find(a => 
+        a.attribute.name.toLowerCase() === 'best seller' || 
+        a.attribute.name === 'الأكثر مبيعاً'
+    );
+    const isBestSeller = isBestSellerAttr?.values?.some(v => 
+        v.name.toLowerCase() === 'yes' || v.name.toLowerCase() === 'true' || v.name === 'نعم'
+    ) || false;
+
     return {
         id: product.id,
         name: product.name,
         price: Math.round(price),
         image: image,
         rating: 5,
-        isBestSeller: false,
+        isBestSeller,
         quantityAvailable,
         isPreorder,
         attributes: product.attributes
@@ -32,6 +40,7 @@ export default async function ProductsPage() {
     try {
         const saleorProducts = await getProducts(100);
         products = saleorProducts.map(transformSaleorProduct);
+        console.log("BEST SELLERS DETECTED IN PRODUCTS PAGE:", products.filter(p => p.isBestSeller).map(p => p.name));
     } catch (error) {
         console.error('Error fetching products:', error);
         // Fallback data

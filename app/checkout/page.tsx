@@ -47,6 +47,43 @@ const CardIcon = ({ className = "w-5 h-5 text-accent" }: { className?: string })
     </svg>
 );
 
+const countries = [
+    { code: 'PS', names: { en: 'Palestine', ar: 'فلسطين' } },
+    { code: 'EG', names: { en: 'Egypt', ar: 'مصر' } },
+    { code: 'JO', names: { en: 'Jordan', ar: 'الأردن' } },
+    { code: 'SA', names: { en: 'Saudi Arabia', ar: 'المملكة العربية السعودية' } },
+    { code: 'AE', names: { en: 'United Arab Emirates', ar: 'الإمارات العربية المتحدة' } },
+    { code: 'QA', names: { en: 'Qatar', ar: 'قطر' } },
+    { code: 'KW', names: { en: 'Kuwait', ar: 'الكويت' } },
+    { code: 'BH', names: { en: 'Bahrain', ar: 'البحرين' } },
+    { code: 'OM', names: { en: 'Oman', ar: 'عمان' } },
+    { code: 'TR', names: { en: 'Turkey', ar: 'تركيا' } },
+    { code: 'US', names: { en: 'United States', ar: 'الولايات المتحدة' } },
+    { code: 'GB', names: { en: 'United Kingdom', ar: 'المملكة المتحدة' } },
+];
+
+const translateCheckoutError = (message: string, language: string): string => {
+    if (language === 'ar') {
+        const stockMatch = message.match(/Could not add items (.*?)\. Only (\d+) remaining in stock\./i);
+        if (stockMatch) {
+            const variant = stockMatch[1];
+            const remaining = stockMatch[2];
+            return `عذراً، المقاس (${variant}) غير متوفر بالكمية المطلوبة. الكمية المتبقية في المخزون هي (${remaining}) فقط.`;
+        }
+        
+        if (message.includes('is not a valid phone number')) {
+            const phoneMatch = message.match(/'(.*?)'/);
+            const phoneNum = phoneMatch ? phoneMatch[1] : '';
+            return `رقم الهاتف '${phoneNum}' غير صالح لدولة فلسطين. يرجى التأكد من كتابة الرقم بشكل صحيح (مثال: 59XXXXXXX).`;
+        }
+        
+        if (message.includes('Required field')) {
+            return 'هذا الحقل مطلوب.';
+        }
+    }
+    return message;
+};
+
 export default function CheckoutPage() {
     const { t, dir, language } = useLanguage();
     const { items, subtotal, checkoutToken } = useCart();
@@ -65,7 +102,7 @@ export default function CheckoutPage() {
         phone: '',
         address: '',
         city: '',
-        country: '',
+        country: 'PS',
         zipCode: '',
     });
 
@@ -150,13 +187,28 @@ export default function CheckoutPage() {
                 const data = await updateCheckoutShippingAddress(checkoutToken, addressInput);
                 if (data.checkoutShippingAddressUpdate?.errors?.length > 0) {
                     console.error('Shipping address update errors:', data.checkoutShippingAddressUpdate.errors);
-                    setErrors({ general: data.checkoutShippingAddressUpdate.errors[0].message });
+                    const newErrors: Record<string, string> = {};
+                    data.checkoutShippingAddressUpdate.errors.forEach((err: any) => {
+                        const translatedMsg = translateCheckoutError(err.message, language);
+                        if (err.field === 'phone') {
+                            newErrors.phone = translatedMsg;
+                        } else if (err.field === 'postalCode') {
+                            newErrors.zipCode = language === 'ar' ? 'الرمز البريدي غير صالح' : 'Invalid postal code';
+                        } else if (err.field === 'city') {
+                            newErrors.city = language === 'ar' ? 'المدينة غير صالحة' : 'Invalid city';
+                        } else if (err.field === 'streetAddress1') {
+                            newErrors.address = language === 'ar' ? 'العنوان غير صالح' : 'Invalid address';
+                        } else {
+                            newErrors.general = translatedMsg;
+                        }
+                    });
+                    setErrors(newErrors);
                     return;
                 }
 
                 const methods = data.checkoutShippingAddressUpdate?.checkout?.availableShippingMethods || [];
                 setAvailableShippingMethods(methods);
-                
+
                 if (methods.length > 0) {
                     setShippingMethod(methods[0].id);
                     // Update shipping method on server for the first one automatically
@@ -403,13 +455,24 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.country} *</label>
-                                        <input
-                                            type="text"
-                                            placeholder={language === 'ar' ? "الدولة" : "Country"}
-                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.country ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
-                                            value={formData.country}
-                                            onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                                        />
+                                        <div className="relative">
+                                            <select
+                                                className={`w-full bg-[#fdfdfd] border ${showErrors && errors.country ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 ${dir === 'rtl' ? 'pl-10 pr-5' : 'pr-10 pl-5'} focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all appearance-none cursor-pointer text-gray-800`}
+                                                value={formData.country}
+                                                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                                            >
+                                                {countries.map((c) => (
+                                                    <option key={c.code} value={c.code}>
+                                                        {language === 'ar' ? c.names.ar : c.names.en}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'left-4' : 'right-4'} flex items-center pointer-events-none text-gray-400`}>
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                        </div>
                                         {showErrors && errors.country && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.country}</p>}
                                     </div>
                                     <div className="space-y-2">

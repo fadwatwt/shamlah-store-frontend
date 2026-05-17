@@ -213,7 +213,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                     {expandedSections.price && (
                         <div className="flex items-center gap-4 mb-3">
                             <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{t.common.currency}</span>
                                 <input
                                     type="number"
                                     placeholder="Min"
@@ -224,7 +224,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                             </div>
                             <span className="text-gray-400">-</span>
                             <div className="relative flex-1">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{t.common.currency}</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{t.common.currency}</span>
                                 <input
                                     type="number"
                                     placeholder="Max"

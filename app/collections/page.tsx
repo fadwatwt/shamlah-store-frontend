@@ -9,13 +9,21 @@ function transformSaleorProduct(product: Product, index: number) {
         product.thumbnail?.url ||
         'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=600';
 
+    const isBestSellerAttr = product.attributes?.find(a => 
+        a.attribute.name.toLowerCase() === 'best seller' || 
+        a.attribute.name === 'الأكثر مبيعاً'
+    );
+    const isBestSeller = isBestSellerAttr?.values?.some(v => 
+        v.name.toLowerCase() === 'yes' || v.name.toLowerCase() === 'true' || v.name === 'نعم'
+    ) || false;
+
     return {
         id: product.id,
         name: product.name,
         price: Math.round(price),
         image: image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
-        isBestSeller: index < 2,
+        isBestSeller,
     };
 }
 

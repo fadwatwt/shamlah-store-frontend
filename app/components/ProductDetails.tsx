@@ -21,10 +21,126 @@ interface ProductDetailsProps {
     images: string[];
     sizes: string[];
     attributes?: Array<{
-        attribute: { name: string; slug: string };
-        values: Array<{ name: string }>;
+        attribute: { name: string; slug: string; translation?: { name: string } | null };
+        values: Array<{ name: string; slug?: string; richText?: string | null; translation?: { name: string } | null }>;
     }>;
     variants?: any[];
+}
+
+interface ParsedProductNotes {
+    title: string;
+    blocks: Array<
+        | { type: 'paragraph'; text: string }
+        | { type: 'list'; items: string[]; style: 'unordered' | 'ordered' }
+    >;
+}
+
+function splitIntoBulletPoints(text: string): string[] {
+    // Replace inline and leading bullets/hyphens with a special delimiter
+    let normalized = text.trim().replace(/^[*•⁃-]\s*/, '|||');
+    normalized = normalized.replace(/\s+[*•⁃-]\s+/g, '|||');
+    normalized = normalized.replace(/\s*[*•⁃]\s*/g, '|||');
+    
+    // Split by the delimiter, trim each block, and filter out empty ones
+    return normalized.split('|||').map(item => item.trim()).filter(Boolean);
+}
+
+function parseProductNotes(notesAttr: any, defaultTitle: string): ParsedProductNotes | null {
+    if (!notesAttr || !notesAttr.values || notesAttr.values.length === 0) return null;
+    
+    const value = notesAttr.values[0];
+    const translation = value.translation?.name;
+    
+    // If we have a translation, we treat it as plain text (since Saleor value translations are plain text)
+    if (translation) {
+        let title = defaultTitle;
+        const blocks: ParsedProductNotes['blocks'] = [];
+        
+        const match = translation.match(/title:\s*["'«]([^"'»]+)["'»]/);
+        if (match) {
+            title = match[1];
+            const rest = translation.replace(/title:\s*["'«][^"'»]+["'»]/, '').trim();
+            if (rest) {
+                const items = splitIntoBulletPoints(rest);
+                if (items.length > 0) {
+                    blocks.push({ type: 'list', items, style: 'unordered' });
+                }
+            }
+        } else {
+            const items = splitIntoBulletPoints(translation);
+            if (items.length > 1) {
+                blocks.push({ type: 'list', items, style: 'unordered' });
+            } else if (translation.trim()) {
+                blocks.push({ type: 'paragraph', text: translation });
+            }
+        }
+        
+        if (blocks.length === 0) return null;
+        return { title, blocks };
+    }
+    
+    let richTextJson: any = null;
+    
+    if (value.richText) {
+        try {
+            richTextJson = JSON.parse(value.richText);
+        } catch (e) {
+            console.error('Failed to parse Product Notes richText JSON', e);
+        }
+    }
+    
+    let title = defaultTitle;
+    const blocks: ParsedProductNotes['blocks'] = [];
+    
+    if (richTextJson && richTextJson.blocks) {
+        for (const block of richTextJson.blocks) {
+            if (block.type === 'paragraph') {
+                const text = block.data.text || '';
+                const match = text.match(/title:\s*["'«]([^"'»]+)["'»]/);
+                if (match) {
+                    title = match[1];
+                    const cleanedText = text.replace(/title:\s*["'«][^"'»]+["'»]/, '').replace(/<br\s*\/?>/gi, '').trim();
+                    if (cleanedText) {
+                        blocks.push({ type: 'paragraph', text: cleanedText });
+                    }
+                } else if (text.trim()) {
+                    blocks.push({ type: 'paragraph', text });
+                }
+            } else if (block.type === 'list') {
+                const items = (block.data.items || []).map((i: string) => i.trim()).filter(Boolean);
+                if (items.length > 0) {
+                    blocks.push({
+                        type: 'list',
+                        items,
+                        style: block.data.style || 'unordered'
+                    });
+                }
+            }
+        }
+    } else {
+        const text = value.name || '';
+        const match = text.match(/title:\s*["'«]([^"'»]+)["'»]/);
+        if (match) {
+            title = match[1];
+            const rest = text.replace(/title:\s*["'«][^"'»]+["'»]/, '').trim();
+            if (rest) {
+                const items = splitIntoBulletPoints(rest);
+                if (items.length > 0) {
+                    blocks.push({ type: 'list', items, style: 'unordered' });
+                }
+            }
+        } else {
+            const items = splitIntoBulletPoints(text);
+            if (items.length > 1) {
+                blocks.push({ type: 'list', items, style: 'unordered' });
+            } else if (text.trim()) {
+                blocks.push({ type: 'paragraph', text });
+            }
+        }
+    }
+    
+    if (blocks.length === 0) return null;
+    return { title, blocks };
 }
 
 export default function ProductDetails({ product, price, currency, images, sizes, attributes = [], variants = [] }: ProductDetailsProps) {
@@ -32,6 +148,14 @@ export default function ProductDetails({ product, price, currency, images, sizes
     const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart, loading: loadingCart } = useCart();
+    
+    const notesAttr = attributes.find(a =>
+        a.attribute.name.toLowerCase() === 'product notes' ||
+        a.attribute.slug === 'product-notes' ||
+        a.attribute.name === 'ملاحظات المنتج'
+    );
+    const defaultNotesTitle = language === 'ar' ? 'ملاحظات المنتج' : 'Product Notes';
+    const parsedNotes = parseProductNotes(notesAttr, defaultNotesTitle);
     const { isAuthenticated } = useAuth();
     const [selectedSize, setSelectedSize] = useState(sizes[0] || 'M');
     const [quantity, setQuantity] = useState(1);
@@ -600,6 +724,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                                     const s = attr.attribute.slug?.toLowerCase();
                                                     return n !== 'color' && n !== 'colors' && n !== 'اللون' && n !== 'ألوان'
                                                         && s !== 'color' && s !== 'colors'
+                                                        && n !== 'best seller' && s !== 'best-seller' && n !== 'الأكثر مبيعاً'
+                                                        && n !== 'product label' && n !== 'label' && s !== 'product-label' && s !== 'label'
+                                                        && n !== 'product notes' && s !== 'product-notes' && n !== 'ملاحظات المنتج'
                                                         && !['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(attr.attribute.name);
                                                 }).map((attr, idx) => (
                                                     <li key={idx}>
@@ -620,42 +747,41 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 )}
                             </div>
 
-                            {/* Care Instructions */}
-                            <div className="border-b border-gray-200">
-                                <button
-                                    onClick={() => toggleTab('care')}
-                                    className="w-full py-4 flex justify-between items-center text-gray-900 font-medium hover:text-accent transition-colors"
-                                >
-                                    <span>{t.product.careInstructions}</span>
-                                    <svg className={`w-4 h-4 transition-transform ${activeTab === 'care' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                                </button>
-                                {activeTab === 'care' && (
-                                    <div className="pb-4 text-sm text-gray-600 leading-relaxed text-start">
-                                        {(() => {
-                                            const careAttr = attributes.find(a =>
-                                                ['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(a.attribute.name)
-                                            );
-                                            if (careAttr && careAttr.values.length > 0) {
-                                                return (
-                                                    <ul className="list-disc ms-5 space-y-1">
-                                                        {careAttr.values.map((v: any, idx) => (
-                                                            <li key={idx}>{v.translation?.name || v.name}</li>
-                                                        ))}
-                                                    </ul>
-                                                );
-                                            }
-                                            return (
-                                                <ul className="list-disc ms-5 space-y-1">
-                                                    <li>{language === 'ar' ? 'تجنبي تعريض القطعة لأشعة الشمس المباشرة لفترات طويلة' : 'Avoid prolonged exposure to direct sunlight'}</li>
-                                                    <li>{language === 'ar' ? 'احفظي القطعة في مكان جاف بعيد عن الرطوبة' : 'Store in a dry place, away from moisture'}</li>
-                                                    <li>{language === 'ar' ? 'يُنصح بالتنظيف الجاف من قبل متخصص' : 'Professional dry cleaning is recommended'}</li>
-                                                    <li>{language === 'ar' ? 'استخدمي قطعة قماش ناعمة لمسح الجلد عند الحاجة' : 'Wipe leather gently with a soft cloth when needed'}</li>
-                                                </ul>
-                                            );
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
+                            {/* Product Notes Collapsible */}
+                            {parsedNotes && (
+                                <div className="border-b border-gray-200">
+                                    <button
+                                        onClick={() => toggleTab('notes')}
+                                        className="w-full py-4 flex justify-between items-center text-gray-900 font-medium hover:text-accent transition-colors text-start"
+                                    >
+                                        <span>{parsedNotes.title}</span>
+                                        <svg className={`w-4 h-4 transition-transform ${activeTab === 'notes' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+                                    {activeTab === 'notes' && (
+                                        <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                                            <div className="space-y-4">
+                                                {parsedNotes.blocks.map((block, idx) => {
+                                                    if (block.type === 'paragraph') {
+                                                        return (
+                                                            <p key={idx} dangerouslySetInnerHTML={{ __html: block.text }} />
+                                                        );
+                                                    } else if (block.type === 'list') {
+                                                        const ListTag = block.style === 'ordered' ? 'ol' : 'ul';
+                                                        return (
+                                                            <ListTag key={idx} className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
+                                                                {block.items.map((item, itemIdx) => (
+                                                                    <li key={itemIdx} dangerouslySetInnerHTML={{ __html: item }} />
+                                                                ))}
+                                                            </ListTag>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                     </div>
