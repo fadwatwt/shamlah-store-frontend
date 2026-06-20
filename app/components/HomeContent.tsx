@@ -63,7 +63,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         className="object-cover"
                         priority
                         fetchPriority="high"
-                        quality={75}
+                        unoptimized
                     />
                     <div className="absolute inset-0 bg-black/40"></div>
                 </div>
@@ -227,6 +227,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                     sizes="(max-width: 1024px) 100vw, 50vw"
                                     className="object-cover"
                                     loading="lazy"
+                                    unoptimized
                                 />
                             </div>
                             <div className="relative h-[300px] w-full bg-gray-100 rounded-sm overflow-hidden">
@@ -237,6 +238,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                     sizes="(max-width: 1024px) 100vw, 50vw"
                                     className="object-cover"
                                     loading="lazy"
+                                    unoptimized
                                 />
                             </div>
                         </div>
@@ -248,6 +250,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                 sizes="(max-width: 1024px) 100vw, 50vw"
                                 className="object-cover"
                                 loading="lazy"
+                                unoptimized
                             />
                         </div>
                     </div>
