@@ -62,6 +62,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         sizes="100vw"
                         className="object-cover"
                         priority
+                        fetchPriority="high"
                         quality={75}
                     />
                     <div className="absolute inset-0 bg-black/40"></div>

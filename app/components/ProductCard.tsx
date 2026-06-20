@@ -91,8 +91,9 @@ export default function ProductCard({
                         alt={name}
                         width={400}
                         height={500}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         className="w-full h-96 object-cover smooth-transition group-hover:scale-110"
-                        unoptimized={process.env.NODE_ENV === 'production' || image.startsWith('http://localhost:8000') || image.includes('onrender.com')}
+                        unoptimized={image.startsWith('http://localhost:8000') || image.includes('onrender.com') || image.includes('placehold.co')}
                     />
                 </Link>
                 <div className="absolute top-4 end-4 flex flex-col gap-2 items-end">
