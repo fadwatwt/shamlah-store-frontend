@@ -16,12 +16,12 @@ import "./globals.css";
 const sfMada = localFont({
   src: [
     {
-      path: "../public/fonts/SFMada.ttf",
+      path: "../public/fonts/SFMada.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../public/fonts/SFMada-Bold.ttf",
+      path: "../public/fonts/SFMada-Bold.woff2",
       weight: "700",
       style: "normal",
     },

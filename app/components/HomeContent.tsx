@@ -59,9 +59,10 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         src="/4749b555d8798833f88a4ddb7463b30c2a5486eb.webp"
                         alt="Hero background"
                         fill
+                        sizes="100vw"
                         className="object-cover"
                         priority
-                        quality={100}
+                        quality={75}
                     />
                     <div className="absolute inset-0 bg-black/40"></div>
                 </div>
@@ -174,8 +175,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                     src={category.image}
                                     alt={category.title}
                                     fill
+                                    sizes="(max-width: 768px) 100vw, 33vw"
                                     className="object-cover smooth-transition group-hover:scale-110"
-                                    unoptimized={process.env.NODE_ENV === 'production' || category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com')}
+                                    unoptimized={category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com') || category.image.includes('placehold.co')}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                                 <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
@@ -217,12 +219,13 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto mb-16">
                         <div className="flex flex-col gap-4">
                             <div className="relative h-[300px] md:h-[400px] w-full bg-gray-100 rounded-sm overflow-hidden">
-                                {/* Assuming some images */}
                                 <Image
                                     src="/c55a82c55d4a03a5e021e554af49768bda4fa39a.webp"
                                     alt="Collection Image 1"
                                     fill
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
                                     className="object-cover"
+                                    loading="lazy"
                                 />
                             </div>
                             <div className="relative h-[300px] w-full bg-gray-100 rounded-sm overflow-hidden">
@@ -230,7 +233,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                     src="/b560acf3b2086c012954bece6fa33fec22882962.webp"
                                     alt="Collection Image 2"
                                     fill
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
                                     className="object-cover"
+                                    loading="lazy"
                                 />
                             </div>
                         </div>
@@ -239,7 +244,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                 src="/4749b555d8798833f88a4ddb7463b30c2a5486eb.webp"
                                 alt="Collection Image 3"
                                 fill
+                                sizes="(max-width: 1024px) 100vw, 50vw"
                                 className="object-cover"
+                                loading="lazy"
                             />
                         </div>
                     </div>
