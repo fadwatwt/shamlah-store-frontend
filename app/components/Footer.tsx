@@ -39,7 +39,7 @@ export default function Footer() {
                                 className="object-contain"
                             />
                         </Link>
-                        <p className="text-gray-500 text-sm leading-relaxed max-w-xs">
+                        <p className="text-gray-600 text-sm leading-relaxed max-w-xs">
                             {t.footer.description}
                         </p>
                     </div>
@@ -47,9 +47,9 @@ export default function Footer() {
                     {/* Navigation Sections */}
                     {sections.map((section) => (
                         <div key={section.title}>
-                            <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-6">
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-6">
                                 {section.title}
-                            </h4>
+                            </h3>
                             <ul className="space-y-4">
                                 {section.links.map((link) => (
                                     <li key={link.label}>
@@ -67,9 +67,9 @@ export default function Footer() {
 
                     {/* Social */}
                     <div>
-                        <h4 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-6">
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-6">
                             {t.footer.sections.followUs}
-                        </h4>
+                        </h3>
                         <div className="flex gap-4">
                             {['Instagram', 'Facebook', 'Twitter'].map((social) => (
                                 <a
@@ -90,14 +90,14 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-gray-400 text-xs text-center md:text-start">
+                    <p className="text-gray-600 text-xs text-center md:text-start">
                         &copy; {new Date().getFullYear()} SHMLH. All rights reserved.
                     </p>
 
                     <div className="flex items-center gap-8 flex-wrap justify-center">
                         <div className="flex gap-6">
-                            <Link href="/privacy" className="text-gray-400 hover:text-accent text-[11px] font-medium">Privacy Policy</Link>
-                            <Link href="/terms" className="text-gray-400 hover:text-accent text-[11px] font-medium">Terms of Use</Link>
+                            <Link href="/privacy" className="text-gray-600 hover:text-accent text-[11px] font-medium">Privacy Policy</Link>
+                            <Link href="/terms" className="text-gray-600 hover:text-accent text-[11px] font-medium">Terms of Use</Link>
                         </div>
 
                         {/* Language Dropdown */}
