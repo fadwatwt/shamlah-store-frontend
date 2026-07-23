@@ -1,13 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
-import { updateCheckoutShippingAddress, updateCheckoutShippingMethod, getCheckout } from '@/lib/queries/cart';
+import {
+    updateCheckoutShippingAddress,
+    updateCheckoutShippingMethod,
+    getCheckout,
+    initializePaymentGateway,
+    initializeTransaction,
+    processTransaction,
+    completeCheckout
+} from '@/lib/queries/cart';
 import { getShopShippingMethods } from '@/lib/queries/shop';
 import { LoadingOverlay } from '../components/LoadingSpinner';
 import Header from '../components/Header';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 // SVGs
 const UserIcon = () => (
@@ -70,19 +80,133 @@ const translateCheckoutError = (message: string, language: string): string => {
             const remaining = stockMatch[2];
             return `عذراً، المقاس (${variant}) غير متوفر بالكمية المطلوبة. الكمية المتبقية في المخزون هي (${remaining}) فقط.`;
         }
-        
+
         if (message.includes('is not a valid phone number')) {
             const phoneMatch = message.match(/'(.*?)'/);
             const phoneNum = phoneMatch ? phoneMatch[1] : '';
             return `رقم الهاتف '${phoneNum}' غير صالح لدولة فلسطين. يرجى التأكد من كتابة الرقم بشكل صحيح (مثال: 59XXXXXXX).`;
         }
-        
+
         if (message.includes('Required field')) {
             return 'هذا الحقل مطلوب.';
         }
     }
     return message;
 };
+
+function StripePaymentForm({
+    checkoutId,
+    total,
+    language,
+    loading,
+    setLoading,
+    onBack
+}: {
+    checkoutId: string;
+    total: number;
+    language: string;
+    loading: boolean;
+    setLoading: (loading: boolean) => void;
+    onBack: () => void;
+}) {
+    const stripe = useStripe();
+    const elements = useElements();
+
+    const handlePaymentSubmit = async () => {
+        if (!stripe || !elements) {
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            // Step 1: Submit elements to validate
+            const submitResult = await elements.submit();
+            if (submitResult.error) {
+                alert(submitResult.error.message);
+                setLoading(false);
+                return;
+            }
+
+            const paymentMethodType = 'card';
+
+            const txDataPayload = {
+                paymentIntent: {
+                    paymentMethod: paymentMethodType,
+                },
+            };
+            console.log('[Stripe] Sending transactionInitialize with data:', JSON.stringify(txDataPayload));
+
+            // Step 2: Initialize transaction to get clientSecret
+            const transactionResult = await initializeTransaction(checkoutId, total, txDataPayload);
+            console.log('[Stripe] transactionInitialize raw response:', JSON.stringify(transactionResult));
+
+            const txData = transactionResult.transactionInitialize;
+            if (txData?.errors?.length > 0) {
+                alert('Transaction error: ' + txData.errors.map((e: any) => e.message).join(', '));
+                setLoading(false);
+                return;
+            }
+
+            const clientSecret = txData?.data?.paymentIntent?.stripeClientSecret;
+            if (!clientSecret) {
+                alert('Failed to get client secret');
+                setLoading(false);
+                return;
+            }
+
+            // Step 3: Confirm payment with Stripe
+            const { error: stripeError } = await stripe.confirmPayment({
+                elements,
+                clientSecret,
+                confirmParams: {
+                    return_url: `${window.location.origin}/checkout/success?checkoutId=${checkoutId}`,
+                },
+            });
+
+            if (stripeError) {
+                alert(stripeError.message || 'Payment failed');
+                setLoading(false);
+                return;
+            }
+        } catch (err: any) {
+            console.error('Payment error:', err);
+            alert(language === 'ar' ? 'حدث خطأ أثناء الدفع' : 'Payment error: ' + (err.message || ''));
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <PaymentElement />
+
+            <p className="text-[11px] text-gray-400 flex items-center gap-2">
+                <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+                {language === 'ar' ? 'الدفع آمن ومشفر عبر Stripe' : 'Secure payment powered by Stripe'}
+            </p>
+
+            <div className="flex flex-col md:flex-row gap-4 mt-8">
+                <button
+                    type="button"
+                    onClick={onBack}
+                    className="flex-1 bg-white text-gray-600 py-4 font-bold border-2 border-gray-100 hover:border-gray-200 rounded-lg smooth-transition"
+                >
+                    {language === 'ar' ? 'رجوع' : 'Back'}
+                </button>
+                <button
+                    type="button"
+                    onClick={handlePaymentSubmit}
+                    disabled={!stripe || loading}
+                    className="flex-[2] bg-accent text-white py-4 font-bold text-lg hover:bg-[#500000] rounded-lg smooth-transition shadow-xl shadow-accent/20 disabled:opacity-50"
+                >
+                    {loading ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'تأكيد الدفع' : 'Confirm Payment')}
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export default function CheckoutPage() {
     const { t, dir, language } = useLanguage();
@@ -94,6 +218,11 @@ export default function CheckoutPage() {
     const [dynamicSubtotal, setDynamicSubtotal] = useState(subtotal);
     const [dynamicShippingPrice, setDynamicShippingPrice] = useState(0);
     const [dynamicTotal, setDynamicTotal] = useState(0);
+    const [checkoutId, setCheckoutId] = useState<string | null>(null);
+
+    // Stripe state
+    const [stripePromise, setStripePromise] = useState<any>(null);
+    const [stripeError, setStripeError] = useState<string | null>(null);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -107,15 +236,8 @@ export default function CheckoutPage() {
     });
 
     const [shippingMethod, setShippingMethod] = useState('standard');
-    const [paymentMethod, setPaymentMethod] = useState('credit_card');
-    const [cardData, setCardData] = useState({
-        number: '',
-        holder: '',
-        expiry: '',
-        cvv: ''
-    });
 
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({})
     const [showErrors, setShowErrors] = useState(false);
 
     // Pre-load shipping methods from shop query
@@ -134,6 +256,23 @@ export default function CheckoutPage() {
         loadInitialShipping();
     }, [subtotal?.amount]);
 
+    // Fetch checkout ID when token is available
+    useEffect(() => {
+        const fetchCheckout = async () => {
+            if (checkoutToken) {
+                try {
+                    const data = await getCheckout(checkoutToken);
+                    if (data.checkout) {
+                        setCheckoutId(data.checkout.id);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch checkout:', err);
+                }
+            }
+        };
+        fetchCheckout();
+    }, [checkoutToken]);
+
     const validateStep1 = () => {
         const newErrors: Record<string, string> = {};
         const errorMsg = language === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill in all required fields';
@@ -147,20 +286,6 @@ export default function CheckoutPage() {
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
-    };
-
-    const validateStep2 = () => {
-        if (paymentMethod === 'credit_card') {
-            const newErrors: Record<string, string> = {};
-            if (!cardData.number) newErrors.cardNumber = 'Required';
-            if (!cardData.holder) newErrors.cardHolder = 'Required';
-            if (!cardData.expiry) newErrors.expiry = 'Required';
-            if (!cardData.cvv) newErrors.cvv = 'Required';
-
-            setErrors(newErrors);
-            return Object.keys(newErrors).length === 0;
-        }
-        return true;
     };
 
     const handleNext = async () => {
@@ -180,7 +305,7 @@ export default function CheckoutPage() {
                     streetAddress1: formData.address,
                     city: formData.city,
                     postalCode: formData.zipCode || '00000',
-                    country: formData.country as any || 'PS', // Default to Palestine if empty
+                    country: formData.country as any || 'PS',
                     phone: formData.phone
                 };
 
@@ -211,17 +336,71 @@ export default function CheckoutPage() {
 
                 if (methods.length > 0) {
                     setShippingMethod(methods[0].id);
-                    // Update shipping method on server for the first one automatically
                     await handleShippingMethodSelect(methods[0].id);
                 }
 
                 setStep(2);
                 setShowErrors(false);
-            } catch (err) {
+
+                // Get checkout ID and initialize Stripe payment
+                const checkoutData = await getCheckout(checkoutToken);
+                const currentCheckoutId = checkoutData.checkout?.id;
+                const checkoutTotal = checkoutData.checkout?.totalPrice?.gross?.amount;
+                if (currentCheckoutId && checkoutTotal) {
+                    setCheckoutId(currentCheckoutId);
+                    await initializeStripePayment(currentCheckoutId, checkoutTotal);
+                } else {
+                    console.error('[Stripe] Missing checkout data:', { currentCheckoutId, checkoutTotal });
+                }
+            } catch (err: any) {
                 console.error('Failed to update shipping address:', err);
+                setStripeError('Failed to proceed: ' + (err?.message || String(err)));
             } finally {
                 setLoading(false);
             }
+        }
+    };
+
+    const initializeStripePayment = async (id?: string, amount?: number) => {
+        const targetId = id || checkoutId;
+        const targetAmount = amount || dynamicTotal || total;
+        if (!targetId) {
+            setStripeError('checkoutId is missing');
+            return;
+        }
+
+        try {
+            const gatewayResult = await initializePaymentGateway(targetId, targetAmount || 1);
+            const configs = gatewayResult.paymentGatewayInitialize?.gatewayConfigs;
+            const gatewayErrors = gatewayResult.paymentGatewayInitialize?.errors;
+
+            if (gatewayErrors?.length > 0) {
+                setStripeError('Gateway errors: ' + gatewayErrors.map((e: any) => e.message).join(', '));
+                return;
+            }
+
+            if (!configs || configs.length === 0) {
+                setStripeError('No gateway configs returned from Saleor');
+                return;
+            }
+
+            const stripeConfig = configs[0];
+            const pk = stripeConfig?.data?.publishableKey || stripeConfig?.data?.stripePublishableKey;
+            if (!pk) {
+                setStripeError('No publishable key in config');
+                return;
+            }
+
+            const stripe = await loadStripe(pk);
+            if (!stripe) {
+                setStripeError('Stripe.js failed to load. Check if js.stripe.com is accessible.');
+                return;
+            }
+
+            setStripePromise(stripe);
+            setStripeError(null);
+        } catch (err: any) {
+            setStripeError('Failed: ' + (err?.message || String(err)));
         }
     };
 
@@ -247,19 +426,23 @@ export default function CheckoutPage() {
         setStep(1);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setShowErrors(true);
-        if (validateStep2()) {
-            // Success! Redirect to success page
-            window.location.href = '/checkout/success';
-        }
-    };
-
     // Fallback if not updated by dynamic fetch yet
     const displayShippingPrice = dynamicShippingPrice || 0;
     const total = dynamicTotal || (subtotal?.amount || 0);
     const currency = t.common.currency;
+
+    const stripeElementsOptions = {
+        mode: 'payment' as const,
+        amount: Math.round((dynamicTotal || total || 1) * 100),
+        currency: 'usd',
+        appearance: {
+            theme: 'stripe' as const,
+            variables: {
+                colorPrimary: '#660000',
+                borderRadius: '8px',
+            },
+        },
+    };
 
     return (
         <div className="min-h-screen bg-background" dir={dir}>
@@ -497,7 +680,7 @@ export default function CheckoutPage() {
                             </div>
                         </>
                     ) : (
-                        <form onSubmit={handleSubmit} className="animate-in fade-in slide-in-from-right-4 duration-500">
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                             {/* Shipping Method */}
                             <div className="mb-12">
                                 <div className="flex items-center gap-3 mb-6">
@@ -542,110 +725,48 @@ export default function CheckoutPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {/* Methods Selection */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'credit_card' ? 'border-accent bg-accent/5' : 'border-gray-100 bg-white'}`}>
-                                            <input type="radio" checked={paymentMethod === 'credit_card'} onChange={() => setPaymentMethod('credit_card')} className="w-5 h-5 accent-accent" />
-                                            <span className="font-medium text-gray-800">{t.checkout.paymentMethods.creditCard}</span>
-                                        </label>
-                                        <label className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all ${paymentMethod === 'apple_pay' ? 'border-accent bg-accent/5' : 'border-gray-100 bg-white'}`}>
-                                            <input type="radio" checked={paymentMethod === 'apple_pay'} onChange={() => setPaymentMethod('apple_pay')} className="w-5 h-5 accent-accent" />
-                                            <span className="font-medium text-gray-800">{t.checkout.paymentMethods.applePay}</span>
-                                        </label>
-                                    </div>
-
-                                    {/* Card Details */}
-                                    {paymentMethod === 'credit_card' && (
-                                        <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                            {/* Card Number */}
-                                            <div className="space-y-2">
-                                                <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.cardNumber} *</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="1234 5678 9012 3456"
-                                                    className={`w-full bg-[#fdfdfd] border ${showErrors && errors.cardNumber ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent transition-all`}
-                                                    value={cardData.number}
-                                                    onChange={(e) => setCardData({ ...cardData, number: e.target.value })}
-                                                />
-                                            </div>
-
-                                            {/* Card Holder */}
-                                            <div className="space-y-2">
-                                                <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.cardHolder} *</label>
-                                                <div className="relative group">
-                                                    <input
-                                                        type="text"
-                                                        placeholder={t.checkout.cardHolderPlaceholder}
-                                                        className={`w-full bg-[#fdfdfd] border ${showErrors && errors.cardHolder ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent transition-all`}
-                                                        value={cardData.holder}
-                                                        onChange={(e) => setCardData({ ...cardData, holder: e.target.value })}
-                                                    />
-                                                    <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'left-4' : 'right-4'} flex items-center text-gray-300`}>
+                                    {stripePromise && checkoutId ? (
+                                        <Elements stripe={stripePromise} options={stripeElementsOptions}>
+                                            <StripePaymentForm
+                                                checkoutId={checkoutId}
+                                                total={total}
+                                                language={language}
+                                                loading={loading}
+                                                setLoading={setLoading}
+                                                onBack={handleBack}
+                                            />
+                                        </Elements>
+                                    ) : (
+                                        <div className="p-6 bg-gray-50 rounded-lg text-center">
+                                            {stripeError ? (
+                                                <div>
+                                                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500 mx-auto mb-4">
                                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3-0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                                         </svg>
                                                     </div>
+                                                    <p className="text-red-500 text-sm font-medium mb-2">
+                                                        {language === 'ar' ? 'خطأ في تحميل الدفع' : 'Payment loading error'}
+                                                    </p>
+                                                    <p className="text-red-400 text-xs">{stripeError}</p>
                                                 </div>
-                                            </div>
-
-                                            {/* Expiry & CVV */}
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.expiryDate} *</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="MM/YY"
-                                                        className={`w-full bg-[#fdfdfd] border ${showErrors && errors.expiry ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent transition-all`}
-                                                        value={cardData.expiry}
-                                                        onChange={(e) => setCardData({ ...cardData, expiry: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.cvv} *</label>
-                                                    <div className="relative group">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="123"
-                                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.cvv ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent transition-all`}
-                                                            value={cardData.cvv}
-                                                            onChange={(e) => setCardData({ ...cardData, cvv: e.target.value })}
-                                                        />
-                                                        <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'left-4' : 'right-4'} flex items-center text-gray-300`}>
-                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <p className="text-[11px] text-gray-400 flex items-center gap-2">
-                                                <svg className="w-3 h-3 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {t.checkout.securePayment}
-                                            </p>
+                                            ) : (
+                                                <>
+                                                    <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full mx-auto mb-4"></div>
+                                                    <p className="text-gray-500">
+                                                        {language === 'ar' ? 'جاري تحميل نموذج الدفع...' : 'Loading payment form...'}
+                                                    </p>
+                                                </>
+                                            )}
                                         </div>
+                                    )}
+
+                                    {errors.payment && (
+                                        <p className="text-[12px] text-red-500 bg-red-50 p-3 rounded-lg">{errors.payment}</p>
                                     )}
                                 </div>
                             </div>
-
-                            <div className="flex flex-col md:flex-row gap-4 mt-8">
-                                <button
-                                    type="button"
-                                    onClick={handleBack}
-                                    className="flex-1 bg-white text-gray-600 py-4 font-bold border-2 border-gray-100 hover:border-gray-200 rounded-lg smooth-transition"
-                                >
-                                    {t.checkout.back}
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-[2] bg-accent text-white py-4 font-bold text-lg hover:bg-[#500000] rounded-lg smooth-transition shadow-xl shadow-accent/20"
-                                >
-                                    {t.checkout.placeOrder}
-                                </button>
-                            </div>
-                        </form>
+                        </div>
                     )}
                 </div>
             </main>

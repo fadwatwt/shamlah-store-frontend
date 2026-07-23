@@ -143,6 +143,10 @@ export const CHECKOUT_FETCH = gql`
            currency
          }
        }
+       availablePaymentGateways {
+         id
+         name
+       }
        deliveryMethod {
          ... on ShippingMethod {
            id
@@ -291,6 +295,81 @@ export const CHECKOUT_LINES_DELETE = gql`
   }
 `;
 
+export const PAYMENT_GATEWAY_INITIALIZE = gql`
+  mutation PaymentGatewayInitialize($checkoutId: ID!, $amount: PositiveDecimal!) {
+    paymentGatewayInitialize(
+      id: $checkoutId
+      paymentGateways: [{ id: "saleor.app.payment.stripe" }]
+      amount: $amount
+    ) {
+      gatewayConfigs {
+        id
+        data
+        errors {
+          field
+          message
+        }
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const TRANSACTION_INITIALIZE = gql`
+  mutation TransactionInitialize($checkoutId: ID!, $amount: PositiveDecimal!, $data: JSON!) {
+    transactionInitialize(
+      id: $checkoutId
+      amount: $amount
+      paymentGateway: { id: "saleor.app.payment.stripe", data: $data }
+    ) {
+      transaction {
+        id
+      }
+      data
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const TRANSACTION_PROCESS = gql`
+  mutation TransactionProcess($transactionId: ID!) {
+    transactionProcess(id: $transactionId) {
+      transaction {
+        id
+      }
+      transactionEvent {
+        type
+        pspReference
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const CHECKOUT_COMPLETE = gql`
+  mutation CheckoutComplete($checkoutId: ID!) {
+    checkoutComplete(id: $checkoutId) {
+      order {
+        id
+        number
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export interface CheckoutLineUpdateInput {
   quantity: number;
   lineId: string; // The ID of the *line*, not the variant
@@ -342,4 +421,20 @@ export async function updateCheckoutShippingAddress(token: string, address: any)
 export async function updateCheckoutShippingMethod(token: string, shippingMethodId: string) {
   const variable = { token, shippingMethodId };
   return request<any>(CHECKOUT_SHIPPING_METHOD_UPDATE, variable);
+}
+
+export async function initializePaymentGateway(checkoutId: string, amount: number) {
+  return request<any>(PAYMENT_GATEWAY_INITIALIZE, { checkoutId, amount });
+}
+
+export async function initializeTransaction(checkoutId: string, amount: number, data: any) {
+  return request<any>(TRANSACTION_INITIALIZE, { checkoutId, amount, data });
+}
+
+export async function processTransaction(transactionId: string) {
+  return request<any>(TRANSACTION_PROCESS, { transactionId });
+}
+
+export async function completeCheckout(checkoutId: string) {
+  return request<any>(CHECKOUT_COMPLETE, { checkoutId });
 }
