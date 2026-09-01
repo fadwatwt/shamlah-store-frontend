@@ -6,6 +6,8 @@ import HomeContent from './components/HomeContent';
 function transformSaleorProduct(product: Product) {
   const price = product.pricing?.priceRange?.start?.gross?.amount ||
     product.variants?.[0]?.pricing?.price?.gross?.amount || 0;
+  const currency = product.pricing?.priceRange?.start?.gross?.currency ||
+    product.variants?.[0]?.pricing?.price?.gross?.currency || 'USD';
   const image = product.images?.[0]?.url ||
     product.thumbnail?.url ||
     'https://placehold.co/400x500/79272C/white?text=منتج';
@@ -25,6 +27,7 @@ function transformSaleorProduct(product: Product) {
     id: product.id,
     name: product.name,
     price: Math.round(price),
+    currency,
     image: image,
     rating: 5,
     isBestSeller,

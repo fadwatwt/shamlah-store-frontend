@@ -96,8 +96,11 @@ export const translations = {
             heroTitle: 'ننسج الذاكرة بهدوء',
             heroSubtitle: 'من نسيج الأرض.. إلى الإنسان',
             explore: 'استكشف',
+            scroll: 'مرر',
             quote: 'من نسيج الأرض.. إلى الإنسان',
             quoteSub: '',
+            missionTitle: 'من نسيج الأرض، إلى الإنسانية',
+            missionText: 'ننسج من عبق التاريخ حكايات تُروى. كل قطعة هي تجسيد لتراثنا الأصيل بلمسة عصرية تتناغم مع روح العصر.',
             philosophy: 'نؤمن أن ما يُصنع من الذاكرة لا يشيخ أبداً. في شملة، كل قطعة تحمل جوهر الأرض، نُسجت باحترام للإنسان، لتصبح جزءاً من حياتك، لا مجرد عابر فيها.',
             bestSellers: 'الأكثر مبيعاً',
             bestSellersSub: 'اكتشف أكثر منتجاتنا شعبية',
@@ -109,9 +112,9 @@ export const translations = {
             shopByCategory: 'تسوق حسب الفئة',
             browseCollections: 'تصفح مجموعاتنا المختارة',
             categories: {
-                bags: { title: 'حقائب فاخرة', subtitle: 'LUXURY HANDBAGS' },
-                clothes: { title: 'ملابس راقية', subtitle: 'LUXURY CLOTHING' },
-                accessories: { title: 'اكسسوارات', subtitle: 'ACCESSORIES' },
+                bags: { title: 'حقائب فاخرة', subtitle: 'حقائب فاخرة' },
+                clothes: { title: 'ملابس راقية', subtitle: 'ملابس راقية' },
+                accessories: { title: 'اكسسوارات', subtitle: 'اكسسوارات' },
             }
         },
         product: {
@@ -221,6 +224,44 @@ export const translations = {
                 title: 'اكتشف مجموعتنا',
                 text: 'تصفح مجموعتنا المختارة من الأزياء والحقائب المصنوعة يدوياً بكل حب',
                 button: 'تسوق الآن',
+            }
+        },
+        contactPage: {
+            hero: {
+                title: 'تواصل معنا',
+                subtitle: 'نحن هنا للإجابة على أسئلتكم',
+            },
+            form: {
+                title: 'أرسل لنا رسالة',
+                name: 'الاسم',
+                namePlaceholder: 'اسمك الكامل',
+                email: 'البريد الإلكتروني',
+                emailPlaceholder: 'البريد الإلكتروني',
+                phone: 'رقم الهاتف',
+                phonePlaceholder: '+970 XX XXX XXXX',
+                message: 'الرسالة',
+                messagePlaceholder: 'اكتب رسالتك هنا...',
+                send: 'إرسال الرسالة',
+                sending: 'جاري الإرسال...',
+                success: 'تم إرسال رسالتك بنجاح! سنتواصل معك قريباً.',
+                error: 'يرجى ملء جميع الحقول المطلوبة',
+            },
+            info: {
+                title: 'معلومات التواصل',
+                address: 'العنوان',
+                addressLine1: 'فلسطين، رام الله',
+                addressLine2: 'الشارع الرئيسي، مبنى التراث',
+                phone: 'الهاتف',
+                email: 'البريد الإلكتروني',
+                hours: 'ساعات العمل',
+                hoursData: {
+                    sunThu: 'الأحد - الخميس',
+                    sunThuTime: '9:00 - 18:00',
+                    saturday: 'السبت',
+                    saturdayTime: '10:00 - 16:00',
+                    friday: 'الجمعة',
+                    fridayTime: 'مغلق',
+                }
             }
         },
         checkout: {
@@ -372,8 +413,11 @@ export const translations = {
             heroTitle: 'We Weave Memory with Grace',
             heroSubtitle: 'From the Fabric of the Land... to Humanity',
             explore: 'Explore',
+            scroll: 'Scroll',
             quote: 'From the Fabric of the Land... to Humanity',
             quoteSub: '',
+            missionTitle: 'From the fabric of the land, to Humanity',
+            missionText: 'With every thread, we weave a story from the scent of history. Every piece is an embodiment of our authentic heritage with a modern touch that harmonizes with the spirit of the times.',
             philosophy: 'We believe that what is crafted from memory never ages. At SHMLH, every piece carries the essence of the land, woven with respect for humanity, to become part of your life, not merely passing through it.',
             bestSellers: 'Best Sellers',
             newArrivals: "New Arrivals",
@@ -549,6 +593,44 @@ export const translations = {
                 title: 'Discover Our Collection',
                 text: 'Browse our curated collection of handmade fashion and bags crafted with love.',
                 button: 'Shop Now',
+            }
+        },
+        contactPage: {
+            hero: {
+                title: 'Contact Us',
+                subtitle: "We're here to answer your questions",
+            },
+            form: {
+                title: 'Send Us a Message',
+                name: 'Name',
+                namePlaceholder: 'Your full name',
+                email: 'Email Address',
+                emailPlaceholder: 'Email Address',
+                phone: 'Phone Number',
+                phonePlaceholder: '+970 XX XXX XXXX',
+                message: 'Message',
+                messagePlaceholder: 'Write your message here...',
+                send: 'Send Message',
+                sending: 'Sending...',
+                success: 'Your message has been sent successfully! We will contact you soon.',
+                error: 'Please fill in all required fields',
+            },
+            info: {
+                title: 'Contact Information',
+                address: 'Address',
+                addressLine1: 'Palestine, Ramallah',
+                addressLine2: 'Main Street, Heritage Building',
+                phone: 'Phone',
+                email: 'Email',
+                hours: 'Business Hours',
+                hoursData: {
+                    sunThu: 'Sunday - Thursday',
+                    sunThuTime: '9:00 - 18:00',
+                    saturday: 'Saturday',
+                    saturdayTime: '10:00 - 16:00',
+                    friday: 'Friday',
+                    fridayTime: 'Closed',
+                }
             }
         }
     },

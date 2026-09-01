@@ -8,11 +8,13 @@ import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { ProductVariant } from '../../lib/types/saleor';
+import { formatPrice, getCurrencyForChannel } from '@/lib/utils/formatPrice';
 
 export interface ProductCardProps {
     id: string;
     name: string;
     price: number;
+    currency?: string;
     image: string;
     rating?: number;
     isBestSeller?: boolean;
@@ -29,6 +31,7 @@ export default function ProductCard({
     id,
     name,
     price,
+    currency,
     image,
     rating = 5,
     isBestSeller = false,
@@ -37,7 +40,7 @@ export default function ProductCard({
     attributes = [],
     variants = [],
 }: ProductCardProps) {
-    const { language, t } = useLanguage();
+    const { language } = useLanguage();
     const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart } = useCart();
@@ -235,9 +238,7 @@ export default function ProductCard({
 
                     {/* Price */}
                     <p className="text-xl text-center font-semibold text-accent mb-3">
-                        {language === 'ar'
-                            ? `${Math.round(price)} ${t.common.currency}`
-                            : `$${Math.round(price)}`}
+                        {formatPrice(price, currency || getCurrencyForChannel(), language === 'ar' ? 'ar-EG' : 'en-US')}
                     </p>
 
                     {/* Colors */}

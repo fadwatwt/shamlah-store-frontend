@@ -1,4 +1,3 @@
-import { cookies } from 'next/headers';
 import { DEFAULT_CHANNEL } from './channel-mapping';
 
 /**
@@ -9,6 +8,7 @@ export async function getCurrentChannel(): Promise<string> {
   // 1. Try server-side (only inside Request Object/Action)
   if (typeof window === 'undefined') {
     try {
+      const { cookies } = await import('next/headers');
       const cookieStore = await cookies();
       const serverChannel = cookieStore.get('saleor-channel')?.value;
       if (serverChannel) return serverChannel;

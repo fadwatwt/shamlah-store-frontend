@@ -6,7 +6,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import {
     updateCheckoutShippingAddress,
+    updateCheckoutBillingAddress,
     updateCheckoutShippingMethod,
+    updateCheckoutEmail,
     getCheckout,
     initializePaymentGateway,
     initializeTransaction,
@@ -155,12 +157,15 @@ function StripePaymentForm({
                 return;
             }
 
+            const saleorTransactionId = txData?.transaction?.id;
+            console.log('[Stripe] Saleor transactionId:', saleorTransactionId);
+
             // Step 3: Confirm payment with Stripe
             const { error: stripeError } = await stripe.confirmPayment({
                 elements,
                 clientSecret,
                 confirmParams: {
-                    return_url: `${window.location.origin}/checkout/success?checkoutId=${checkoutId}`,
+                    return_url: `${window.location.origin}/checkout/success?checkoutId=${checkoutId}${saleorTransactionId ? `&transactionId=${encodeURIComponent(saleorTransactionId)}` : ''}`,
                 },
             });
 
@@ -334,6 +339,20 @@ export default function CheckoutPage() {
                 const methods = data.checkoutShippingAddressUpdate?.checkout?.availableShippingMethods || [];
                 setAvailableShippingMethods(methods);
 
+                // Set billing address same as shipping (required — otherwise "Billing address is not set")
+                const billingResult = await updateCheckoutBillingAddress(checkoutToken, addressInput);
+                if (billingResult.checkoutBillingAddressUpdate?.errors?.length > 0) {
+                    console.error('Billing address update errors:', billingResult.checkoutBillingAddressUpdate.errors);
+                }
+
+                // Set email on checkout (required for guest order confirmations)
+                if (formData.email) {
+                    const emailResult = await updateCheckoutEmail(checkoutToken, formData.email);
+                    if (emailResult.checkoutEmailUpdate?.errors?.length > 0) {
+                        console.error('Email update errors:', emailResult.checkoutEmailUpdate.errors);
+                    }
+                }
+
                 if (methods.length > 0) {
                     setShippingMethod(methods[0].id);
                     await handleShippingMethodSelect(methods[0].id);
@@ -429,12 +448,15 @@ export default function CheckoutPage() {
     // Fallback if not updated by dynamic fetch yet
     const displayShippingPrice = dynamicShippingPrice || 0;
     const total = dynamicTotal || (subtotal?.amount || 0);
-    const currency = t.common.currency;
+    const checkoutCurrency = subtotal?.currency || 'USD';
+    const currency = checkoutCurrency;
+    // Use actual checkout currency for Stripe - Saleor checkout is channel-locked
+    const stripeCurrency = checkoutCurrency.toLowerCase();
 
     const stripeElementsOptions = {
         mode: 'payment' as const,
         amount: Math.round((dynamicTotal || total || 1) * 100),
-        currency: 'usd',
+        currency: stripeCurrency,
         appearance: {
             theme: 'stripe' as const,
             variables: {

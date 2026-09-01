@@ -38,14 +38,19 @@ export default function RegisterPage() {
 
         setIsRegistering(true);
         try {
-            // Note: Currently we only send email/password/redirectUrl/channel
-            // Additional fields (name, phone, city) would need profile update after login
+            const parts = fullName.trim().split(/\s+/);
+            const firstName = parts[0] || '';
+            const lastName = parts.slice(1).join(' ') || '';
             const result = await register({
                 email,
                 password,
                 redirectUrl: window.location.origin + '/login',
-                channel: process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel'
-            });
+                channel: process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel',
+                firstName,
+                lastName,
+                phone,
+                city,
+            } as any);
 
             if (!result.success) {
                 setError(result.error || 'Registration failed');
@@ -87,7 +92,7 @@ export default function RegisterPage() {
                             </div>
                         )}
 
-                        {/* Full Name - Not sent to Saleor in basic register, needed for profile update later */}
+                        {/* Full Name */}
                         <div>
                             <label className="block text-gray-500 text-sm mb-2 text-start">{t.profile.fullName} *</label>
                             <div className="relative">
@@ -127,7 +132,7 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
-                        {/* Phone - Not sent in basic auth */}
+                        {/* Phone */}
                         <div>
                             <label className="block text-gray-500 text-sm mb-2 text-start">{t.profile.phone} *</label>
                             <div className="relative">
@@ -147,7 +152,7 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
-                        {/* City - Not sent in basic auth */}
+                        {/* City */}
                         <div>
                             <label className="block text-gray-500 text-sm mb-2 text-start">{t.profile.city} *</label>
                             <div className="relative">

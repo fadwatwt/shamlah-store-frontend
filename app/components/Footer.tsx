@@ -91,13 +91,13 @@ export default function Footer() {
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
                     <p className="text-gray-600 text-xs text-center md:text-start">
-                        &copy; {new Date().getFullYear()} SHMLH. All rights reserved.
+                        &copy; {new Date().getFullYear()} SHMLH. {t.footer.rights}
                     </p>
 
                     <div className="flex items-center gap-8 flex-wrap justify-center">
                         <div className="flex gap-6">
-                            <Link href="/privacy" className="text-gray-600 hover:text-accent text-[11px] font-medium">Privacy Policy</Link>
-                            <Link href="/terms" className="text-gray-600 hover:text-accent text-[11px] font-medium">Terms of Use</Link>
+                            <Link href="/privacy" className="text-gray-600 hover:text-accent text-[11px] font-medium">{t.footer.links_label.privacy}</Link>
+                            <Link href="/terms" className="text-gray-600 hover:text-accent text-[11px] font-medium">{t.footer.links_label.terms}</Link>
                         </div>
 
                         {/* Language Dropdown */}

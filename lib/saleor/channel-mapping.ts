@@ -23,3 +23,9 @@ export function getChannelByCountry(countryCode: string | null): ChannelSlug {
 }
 
 export const DEFAULT_CHANNEL = CHANNELS.global.slug;
+
+export const CHANNEL_CURRENCY_MAP: Record<ChannelSlug, string> = {
+  'global-usd': 'USD',
+  'eu-eur': 'EUR',
+  'tr-try': 'TRY',
+};

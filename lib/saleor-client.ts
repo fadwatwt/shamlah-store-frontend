@@ -10,6 +10,12 @@ export const saleorClient = new GraphQLClient(getSaleorApiUrl(), {
   fetch: (url, config) => fetch(url, { ...config, next: { revalidate: 60 } }),
 });
 
+// No-cache client for auth mutations (login/register/me) — prevents `revalidate:60` from returning stale POST results
+export const authClient = new GraphQLClient(getSaleorApiUrl(), {
+  headers: { 'Content-Type': 'application/json' },
+  fetch: (url, config) => fetch(url, { ...config, cache: 'no-store' }),
+});
+
 // 2 retries after first failure (3 total), 2s then 4s delay
 const RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 2000;
@@ -39,13 +45,13 @@ function isRetryableError(err: any): boolean {
   return true;
 }
 
-export async function request<T>(query: string, variables?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
+async function requestWithClient<T>(client: GraphQLClient, query: string, variables?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
     try {
       // Use rawRequest so we can inspect both data and errors before deciding what to do
-      const result = await saleorClient.rawRequest<T>(query, variables, headers);
+      const result = await client.rawRequest<T>(query, variables, headers);
 
       if (result.errors?.length) {
         if (result.data) {
@@ -80,4 +86,12 @@ export async function request<T>(query: string, variables?: Record<string, any>,
   }
 
   throw lastError;
+}
+
+export async function request<T>(query: string, variables?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
+  return requestWithClient<T>(saleorClient, query, variables, headers);
+}
+
+export async function requestAuth<T>(query: string, variables?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
+  return requestWithClient<T>(authClient, query, variables, headers);
 }

@@ -75,12 +75,18 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                     <p className="text-lg md:text-xl font-light tracking-wider">
                         {t.home.heroSubtitle}
                     </p>
+                    <Link
+                        href="/collections"
+                        className="mt-8 inline-block border border-white/80 text-white px-8 py-2.5 text-sm tracking-widest uppercase hover:bg-white hover:text-black smooth-transition"
+                    >
+                        {t.home.explore}
+                    </Link>
                 </div>
 
                 {/* Scroll Indicator */}
                 <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
                     <div className="w-[1px] h-12 bg-white/70 mb-2"></div>
-                    <span className="text-white/80 text-xs tracking-widest uppercase">Scroll</span>
+                    <span className="text-white/80 text-xs tracking-widest uppercase">{t.home.scroll}</span>
                 </div>
             </section>
 
@@ -97,12 +103,10 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         />
                     </div>
                     <h2 className="text-3xl md:text-4xl font-serif text-accent mb-6 leading-relaxed">
-                        {language === 'ar' ? 'من نسيج الأرض، إلى الإنسانية' : 'From the fabric of the land, to Humanity'}
+                        {t.home.missionTitle}
                     </h2>
                     <p className="text-gray-600 text-lg md:text-xl leading-loose font-light max-w-3xl mx-auto">
-                        {language === 'ar'
-                            ? 'ننسج من عبق التاريخ حكايات تُروى. كل قطعة هي تجسيد لتراثنا الأصيل بلمسة عصرية تتناغم مع روح العصر.'
-                            : 'With every thread, we weave a story from the scent of history. Every piece is an embodiment of our authentic heritage with a modern touch that harmonizes with the spirit of the times.'}
+                        {t.home.missionText}
                     </p>
                 </div>
             </section>
@@ -255,7 +259,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         </div>
                     </div>
                     <Link
-                        href="/collections/new"
+                        href="/collections"
                         className="inline-block border-2 border-accent text-accent px-10 py-3 font-semibold smooth-transition hover:bg-accent hover:text-white"
                     >
                         {t.home.exploreMore}

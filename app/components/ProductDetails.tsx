@@ -8,11 +8,9 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
 import { getProductsByCategory } from '@/lib/queries/products';
 import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
-import LoginModal from './LoginModal';
 
 interface ProductDetailsProps {
     product: any;
@@ -156,15 +154,11 @@ export default function ProductDetails({ product, price, currency, images, sizes
     );
     const defaultNotesTitle = language === 'ar' ? 'ملاحظات المنتج' : 'Product Notes';
     const parsedNotes = parseProductNotes(notesAttr, defaultNotesTitle);
-    const { isAuthenticated } = useAuth();
     const [selectedSize, setSelectedSize] = useState(sizes[0] || 'M');
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState(images[0]);
     const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
-    const [loginModalOpen, setLoginModalOpen] = useState(false);
-    // Action to retry after a successful login (set when user clicks a gated button)
-    const [pendingAction, setPendingAction] = useState<'addToCart' | 'buyNow' | null>(null);
 
     const handleAddToCart = async () => {
         if (!selectedVariantId) {
@@ -187,25 +181,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
         }
     };
 
-    const requireAuthThen = (action: 'addToCart' | 'buyNow') => {
-        if (isAuthenticated) {
-            if (action === 'addToCart') handleAddToCart();
-            else handleBuyNow();
-            return;
-        }
-        setPendingAction(action);
-        setLoginModalOpen(true);
-    };
 
-    const onLoginSuccess = () => {
-        const action = pendingAction;
-        setPendingAction(null);
-        // Defer slightly so the modal closes first
-        setTimeout(() => {
-            if (action === 'addToCart') handleAddToCart();
-            else if (action === 'buyNow') handleBuyNow();
-        }, 50);
-    };
 
     // Derive colors from the product's "Color"/"Colors" attribute (values are hex codes from Saleor)
     const productColors = useMemo(() => {
@@ -684,7 +660,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         {/* Action Buttons */}
                         <div className="space-y-4 mb-12">
                             <button
-                                onClick={() => requireAuthThen('addToCart')}
+                                onClick={handleAddToCart}
                                 disabled={loadingCart}
                                 className="w-full bg-accent text-white py-4 rounded-sm font-bold text-lg hover:bg-accent/90 smooth-transition shadow-sm flex items-center justify-center gap-3 disabled:opacity-70"
                             >
@@ -696,7 +672,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 ) : t.product.addToCart}
                             </button>
                             <button
-                                onClick={() => requireAuthThen('buyNow')}
+                                onClick={handleBuyNow}
                                 disabled={loadingCart}
                                 className="w-full bg-transparent border border-accent text-accent py-4 rounded-sm font-bold text-lg hover:bg-accent hover:text-white smooth-transition flex items-center justify-center gap-3 disabled:opacity-70"
                             >
@@ -823,12 +799,6 @@ export default function ProductDetails({ product, price, currency, images, sizes
                 )}
             </div>
         </main>
-        <LoginModal
-            isOpen={loginModalOpen}
-            onClose={() => { setLoginModalOpen(false); setPendingAction(null); }}
-            onLoginSuccess={onLoginSuccess}
-            message={language === 'ar' ? 'يرجى تسجيل الدخول لإتمام عملية الشراء' : 'Please log in to complete your purchase'}
-        />
         </>
     );
 }

@@ -11,6 +11,7 @@ interface CartContextType {
     addToCart: (variantId: string, quantity: number) => Promise<void>;
     updateLineQuantity: (lineId: string, quantity: number) => Promise<void>;
     removeFromCart: (lineId: string) => Promise<void>;
+    clearCart: () => void;
     cartCount: number;
     subtotal: { amount: number; currency: string } | null;
     shippingPrice: { amount: number; currency: string } | null;
@@ -147,6 +148,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const clearCart = () => {
+        localStorage.removeItem('checkoutToken');
+        setCheckoutToken(null);
+        setCheckoutId(null);
+        setItems([]);
+        setSubtotal(null);
+        setShippingPrice(null);
+        setTotalPrice(null);
+    };
+
     const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
     return (
@@ -158,6 +169,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             addToCart,
             updateLineQuantity,
             removeFromCart,
+            clearCart,
             cartCount,
             subtotal,
             shippingPrice,

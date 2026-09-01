@@ -355,6 +355,35 @@ export const TRANSACTION_PROCESS = gql`
   }
 `;
 
+export const CHECKOUT_BILLING_ADDRESS_UPDATE = gql`
+  mutation CheckoutBillingAddressUpdate($token: UUID!, $billingAddress: AddressInput!) {
+    checkoutBillingAddressUpdate(token: $token, billingAddress: $billingAddress) {
+      checkout {
+        id
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const CHECKOUT_EMAIL_UPDATE = gql`
+  mutation CheckoutEmailUpdate($token: UUID!, $email: String!) {
+    checkoutEmailUpdate(token: $token, email: $email) {
+      checkout {
+        id
+        email
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
 export const CHECKOUT_COMPLETE = gql`
   mutation CheckoutComplete($checkoutId: ID!) {
     checkoutComplete(id: $checkoutId) {
@@ -437,4 +466,12 @@ export async function processTransaction(transactionId: string) {
 
 export async function completeCheckout(checkoutId: string) {
   return request<any>(CHECKOUT_COMPLETE, { checkoutId });
+}
+
+export async function updateCheckoutBillingAddress(token: string, address: any) {
+  return request<any>(CHECKOUT_BILLING_ADDRESS_UPDATE, { token, billingAddress: address });
+}
+
+export async function updateCheckoutEmail(token: string, email: string) {
+  return request<any>(CHECKOUT_EMAIL_UPDATE, { token, email });
 }

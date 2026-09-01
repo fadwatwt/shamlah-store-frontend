@@ -1,4 +1,4 @@
-import { request } from '../saleor-client';
+import { requestAuth } from '../saleor-client';
 import { gql } from 'graphql-request';
 
 export const ACCOUNT_REGISTER = gql`
@@ -57,6 +57,28 @@ export const CURRENT_USER = gql`
         }
         phone
       }
+      addresses {
+        id
+        streetAddress1
+        streetAddress2
+        city
+        postalCode
+        country {
+          code
+          country
+        }
+        phone
+      }
+    }
+  }
+`;
+
+export const CURRENT_USER_ORDERS = gql`
+  query CurrentUserOrders {
+    me {
+      orders(first: 100) {
+        totalCount
+      }
     }
   }
 `;
@@ -97,7 +119,40 @@ export interface RegisterInput {
   password: string;
   redirectUrl: string;
   channel?: string;
+  // Personal data collected on the frontend — saved via accountUpdate / addressCreate after auto-login
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  city?: string;
 }
+
+export const ACCOUNT_UPDATE = gql`
+  mutation AccountUpdate($input: AccountInput!) {
+    accountUpdate(input: $input) {
+      errors { field message code }
+      user { id firstName lastName }
+    }
+  }
+`;
+
+export const ACCOUNT_ADDRESS_CREATE = gql`
+  mutation AccountAddressCreate($input: AddressInput!) {
+    accountAddressCreate(input: $input) {
+      errors { field message code }
+      address { id streetAddress1 city country { code country } phone }
+      user { id }
+    }
+  }
+`;
+
+export const ACCOUNT_SET_DEFAULT_ADDRESS = gql`
+  mutation AccountSetDefaultAddress($id: ID!, $type: AddressTypeEnum!) {
+    accountSetDefaultAddress(id: $id, type: $type) {
+      errors { field message code }
+      user { id }
+    }
+  }
+`;
 
 export interface RegisterResponse {
   accountRegister: {
@@ -150,26 +205,147 @@ export interface UserResponse {
       };
       phone: string;
     } | null;
+    addresses?: Array<{
+      id: string;
+      streetAddress1: string;
+      streetAddress2: string;
+      city: string;
+      postalCode: string;
+      country: {
+        code: string;
+        country: string;
+      };
+      phone: string;
+    }> | null;
   } | null;
 }
 
 export async function registerAccount(input: RegisterInput) {
-  return request<RegisterResponse>(ACCOUNT_REGISTER, { input });
+  // Saleor AccountRegisterInput only accepts email/password/redirectUrl/channel (+firstName/lastName in new versions).
+  // Build an explicit whitelist so unknown fields (phone, city, ...) never reach the mutation.
+  const saleorInput: any = {
+    email: input.email,
+    password: input.password,
+    redirectUrl: input.redirectUrl,
+  };
+  if (input.channel) saleorInput.channel = input.channel;
+  if ((input as any).firstName) saleorInput.firstName = (input as any).firstName;
+  if ((input as any).lastName) saleorInput.lastName = (input as any).lastName;
+  return requestAuth<RegisterResponse>(ACCOUNT_REGISTER, { input: saleorInput });
+}
+
+export async function updateAccount(token: string, input: { firstName?: string; lastName?: string }) {
+  return requestAuth<any>(ACCOUNT_UPDATE, { input }, { Authorization: `Bearer ${token}` });
+}
+
+export async function createAccountAddress(token: string, input: any) {
+  return requestAuth<any>(ACCOUNT_ADDRESS_CREATE, { input }, { Authorization: `Bearer ${token}` });
+}
+
+export async function setDefaultAddress(token: string, id: string, type: 'SHIPPING' | 'BILLING') {
+  return requestAuth<any>(ACCOUNT_SET_DEFAULT_ADDRESS, { id, type }, { Authorization: `Bearer ${token}` });
 }
 
 export async function loginUser(email: string, password: string) {
-  return request<LoginResponse>(TOKEN_CREATE, { email, password });
+  return requestAuth<LoginResponse>(TOKEN_CREATE, { email, password });
 }
 
 export async function getCurrentUser(token: string) {
-  return request<UserResponse>(CURRENT_USER, undefined, {
+  return requestAuth<UserResponse>(CURRENT_USER, undefined, {
     Authorization: `Bearer ${token}`,
   });
 }
 
+export async function getCurrentUserOrdersCount(token: string) {
+  const data = await requestAuth<any>(CURRENT_USER_ORDERS, undefined, {
+    Authorization: `Bearer ${token}`,
+  });
+  return data?.me?.orders?.totalCount ?? 0;
+}
+
+export const USER_ORDERS_LIST = gql`
+  query UserOrdersList {
+    me {
+      orders(first: 20) {
+        edges {
+          node {
+            id
+            number
+            created
+            status
+            paymentStatus
+            shippingAddress {
+              streetAddress1
+              streetAddress2
+              city
+              postalCode
+              country {
+                code
+                country
+              }
+              phone
+            }
+            total {
+              gross {
+                amount
+                currency
+              }
+            }
+            subtotal {
+              gross {
+                amount
+                currency
+              }
+            }
+            shippingPrice {
+              gross {
+                amount
+                currency
+              }
+            }
+            lines {
+              id
+              quantity
+              variant {
+                id
+                product {
+                  name
+                  thumbnail {
+                    url
+                  }
+                }
+              }
+              totalPrice {
+                gross {
+                  amount
+                  currency
+                }
+              }
+              unitPrice {
+                gross {
+                  amount
+                  currency
+                }
+              }
+            }
+          }
+        }
+        totalCount
+      }
+    }
+  }
+`;
+
+export async function getUserOrders(token: string) {
+  const data = await requestAuth<any>(USER_ORDERS_LIST, undefined, {
+    Authorization: `Bearer ${token}`,
+  });
+  return data?.me?.orders?.edges?.map((e: any) => e.node) ?? [];
+}
+
 export async function getExternalAuthUrl(redirectUri: string) {
   const input = JSON.stringify({ redirectUri });
-  return request<any>(EXTERNAL_AUTHENTICATION_URL, {
+  return requestAuth<any>(EXTERNAL_AUTHENTICATION_URL, {
     pluginId: "mirumee.authentication.openidconnect",
     input,
   });
@@ -177,7 +353,7 @@ export async function getExternalAuthUrl(redirectUri: string) {
 
 export async function obtainExternalAccessTokens(code: string, state: string) {
   const input = JSON.stringify({ code, state });
-  return request<any>(EXTERNAL_OBTAIN_ACCESS_TOKENS, {
+  return requestAuth<any>(EXTERNAL_OBTAIN_ACCESS_TOKENS, {
     pluginId: "mirumee.authentication.openidconnect",
     input,
   });

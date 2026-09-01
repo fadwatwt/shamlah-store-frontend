@@ -2,81 +2,50 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { getUserOrders } from '@/lib/queries/auth';
+
+function mapSaleorStatus(s: string): 'delivered' | 'shipped' | 'processing' {
+    const v = (s || '').toUpperCase();
+    if (v === 'FULFILLED') return 'delivered';
+    if (v === 'PARTIALLY_FULFILLED') return 'shipped';
+    return 'processing'; // UNFULFILLED, UNCONFIRMED, DRAFT, CANCELED -> processing
+}
 
 export default function OrdersPage() {
     const { t, dir, language } = useLanguage();
+    const { isAuthenticated } = useAuth();
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock Data for Orders
-    const orders = [
-        {
-            id: 'SHMLH-A7K9M2D3X',
-            date: { ar: '15 ديسمبر 2024', en: 'December 15, 2024' },
-            total: 1035,
-            status: 'delivered', // delivered, shipped, processing
-            items: [
-                {
-                    id: 1,
-                    name: { ar: 'حقيبة الذاكرة الفلسطينية', en: 'Palestinian Memory Bag' },
-                    price: 450,
-                    quantity: 1,
-                    image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=200',
-                },
-                {
-                    id: 2,
-                    name: { ar: 'شال التراث المطرز', en: 'Embroidered Heritage Shawl' },
-                    price: 280,
-                    quantity: 2,
-                    image: 'https://images.unsplash.com/photo-1620799140408-ed5341cd2431?auto=format&fit=crop&q=80&w=200',
-                },
-            ],
-            subtotal: 1010,
-            shipping: 25,
-        },
-        {
-            id: 'SHMLH-B4N8P1Q5Z',
-            date: { ar: '28 نوفمبر 2024', en: 'November 28, 2024' },
-            total: 720,
-            status: 'shipped',
-            items: [
-                {
-                    id: 3,
-                    name: { ar: 'أقراط الريتون الذهبية', en: 'Golden Riton Earrings' },
-                    price: 320,
-                    quantity: 1,
-                    image: 'https://images.unsplash.com/photo-1611085583191-a3b181a88401?auto=format&fit=crop&q=80&w=200',
-                },
-                {
-                    id: 4,
-                    name: { ar: 'طقم تطريز يدوي', en: 'Hand Embroidery Kit' },
-                    price: 400,
-                    quantity: 1,
-                    image: 'https://images.unsplash.com/photo-1605364850069-b5f7e7f7b311?auto=format&fit=crop&q=80&w=200'
-                }
-            ],
-            subtotal: 720,
-            shipping: 0,
-        },
-        {
-            id: 'SHMLH-C6M7L3K9Y',
-            date: { ar: '10 أكتوبر 2024', en: 'October 10, 2024' },
-            total: 890,
-            status: 'processing',
-            items: [
-                {
-                    id: 5,
-                    name: { ar: 'فستان الحرير الفلسطيني', en: 'Palestinian Silk Dress' },
-                    price: 890,
-                    quantity: 1,
-                    image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=200',
-                },
-            ],
-            subtotal: 865,
-            shipping: 25,
-        },
-    ];
+    useEffect(() => {
+        if (!isAuthenticated) { setLoading(false); return; }
+        const token = localStorage.getItem('token');
+        if (!token) { setLoading(false); return; }
+        getUserOrders(token).then((nodes) => {
+            const mapped = nodes.map((o: any) => ({
+                id: o.number || o.id.slice(-8),
+                rawId: o.id,
+                date: new Date(o.created).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                total: o.total?.gross?.amount ?? 0,
+                currency: o.total?.gross?.currency ?? 'USD',
+                status: mapSaleorStatus(o.status),
+                subtotal: o.subtotal?.gross?.amount ?? 0,
+                shipping: o.shippingPrice?.gross?.amount ?? 0,
+                items: (o.lines || []).map((l: any) => ({
+                    id: l.id,
+                    name: l.variant?.product?.name || 'Product',
+                    price: l.unitPrice?.gross?.amount ?? l.totalPrice?.gross?.amount ?? 0,
+                    quantity: l.quantity,
+                    image: l.variant?.product?.thumbnail?.url || 'https://placehold.co/200x200?text=Product',
+                })),
+            }));
+            setOrders(mapped);
+        }).catch(() => setOrders([])).finally(() => setLoading(false));
+    }, [isAuthenticated, language]);
 
     const toggleOrder = (orderId: string) => {
         if (expandedOrderId === orderId) {
@@ -144,7 +113,14 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="max-w-4xl mx-auto space-y-8">
-                    {orders.map((order) => (
+                    {loading ? (
+                        <div className="flex justify-center py-16"><div className="w-8 h-8 rounded-full border-4 border-accent border-r-transparent animate-spin"></div></div>
+                    ) : orders.length === 0 ? (
+                        <div className="text-center py-16 border border-dashed border-gray-200 rounded-lg">
+                            <p className="text-gray-500 mb-2">{language === 'ar' ? 'لا توجد طلبات بعد' : 'No orders yet'}</p>
+                            <p className="text-sm text-gray-400">{language === 'ar' ? 'طلباتك ستظهر هنا بعد إتمام الشراء' : 'Your orders will appear here after purchase'}</p>
+                        </div>
+                    ) : orders.map((order) => (
                         <div key={order.id} className="border border-gray-100 rounded-lg overflow-hidden shadow-sm smooth-transition hover:shadow-md">
                             {/* Order Summary Header */}
                             <div className="bg-[#FAF9F6] p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -155,11 +131,11 @@ export default function OrdersPage() {
                                     </div>
                                     <div>
                                         <span className="block text-gray-400 mb-1">{t.orders.date}</span>
-                                        <span className="font-medium text-gray-800">{order.date[language]}</span>
+                                        <span className="font-medium text-gray-800">{order.date}</span>
                                     </div>
                                     <div>
                                         <span className="block text-gray-400 mb-1">{t.orders.total}</span>
-                                        <span className="font-bold text-accent font-english" dir="ltr">${order.total}</span>
+                                        <span className="font-bold text-accent font-english" dir="ltr">{order.total} {order.currency}</span>
                                     </div>
                                 </div>
 
@@ -185,11 +161,11 @@ export default function OrdersPage() {
                             {/* Order Items Preview (Collapsed) */}
                             {(!expandedOrderId || expandedOrderId !== order.id) ? (
                                 <div className="p-6 bg-white flex gap-4">
-                                    {order.items.map((item) => (
+                                    {order.items.map((item: any) => (
                                         <div key={item.id} className="relative w-16 h-16 rounded-md overflow-hidden border border-gray-100">
                                             <Image
                                                 src={item.image}
-                                                alt={item.name[language]}
+                                                alt={item.name}
                                                 fill
                                                 className="object-cover"
                                             />
@@ -204,19 +180,19 @@ export default function OrdersPage() {
                                     <h3 className="font-bold text-lg text-gray-900 mb-6 border-b border-gray-100 pb-2">{t.orders.viewDetails}</h3>
 
                                     <div className="space-y-6 mb-8">
-                                        {order.items.map((item) => (
+                                        {order.items.map((item: any) => (
                                             <div key={item.id} className="flex gap-6 items-center">
                                                 <div className="relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 border border-gray-200">
                                                     <Image
                                                         src={item.image}
-                                                        alt={item.name[language]}
+                                                        alt={item.name}
                                                         fill
                                                         className="object-cover"
                                                     />
                                                 </div>
                                                 <div className="flex-grow">
                                                     <div className="flex justify-between mb-1">
-                                                        <h4 className="font-bold text-gray-800">{item.name[language]}</h4>
+                                                        <h4 className="font-bold text-gray-800">{item.name}</h4>
                                                         <span className="font-bold text-accent font-english" dir="ltr">${item.price * item.quantity}</span>
                                                     </div>
                                                     <p className="text-gray-500 text-sm">{language === 'ar' ? 'الكمية' : 'Quantity'}: <span className="font-english">{item.quantity}</span></p>
@@ -245,6 +221,7 @@ export default function OrdersPage() {
                             )}
                         </div>
                     ))}
+                    {!loading && orders.length === 0 ? null : null}
                 </div>
 
                 {/* Back Button */}

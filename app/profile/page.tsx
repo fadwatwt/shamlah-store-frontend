@@ -3,13 +3,34 @@
 import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import { getCurrentUserOrdersCount, getUserOrders } from '@/lib/queries/auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
     const { t, dir, language } = useLanguage();
     const { user, loading, logout, isAuthenticated } = useAuth();
+    const { items: wishlistItems } = useWishlist();
     const router = useRouter();
+    const [ordersCount, setOrdersCount] = useState<number | null>(null);
+    const [orderAddress, setOrderAddress] = useState<any | null>(null);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        getCurrentUserOrdersCount(token)
+            .then(setOrdersCount)
+            .catch(() => setOrdersCount(0));
+        // Fetch last order's shipping address as fallback for real address
+        getUserOrders(token)
+            .then((nodes: any[]) => {
+                const withAddress = nodes.find((n: any) => n.shippingAddress);
+                if (withAddress?.shippingAddress) setOrderAddress(withAddress.shippingAddress);
+            })
+            .catch(() => {});
+    }, [isAuthenticated]);
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {
@@ -39,7 +60,10 @@ export default function ProfilePage() {
     };
 
     const fullName = `${user.firstName} ${user.lastName}`;
-    const address = user.defaultShippingAddress;
+    const savedAddress = user.defaultShippingAddress;
+    const savedAddresses = (user as any)?.addresses || [];
+    const displayAddress = savedAddress || savedAddresses[0] || orderAddress;
+    const displayPhone = (displayAddress as any)?.phone || null;
 
     return (
         <main className="min-h-screen pt-32 pb-20 md:px-24" dir={dir}>
@@ -140,7 +164,7 @@ export default function ProfilePage() {
                                         <svg className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                         </svg>
-                                        {address?.phone || '+970 599 123 456'}
+                                        {displayPhone || (language === 'ar' ? 'لم يُحدد' : 'Not set')}
                                     </div>
                                 </div>
                             </div>
@@ -164,41 +188,28 @@ export default function ProfilePage() {
                                 </button>
                             </div>
 
-                            {address ? (
+                            {displayAddress ? (
                                 <div className="bg-[#F6F5F2] p-8">
-                                    <p className="font-serif text-sm text-gray-800 mb-6">{address.streetAddress1} {address.streetAddress2 ? `, ${address.streetAddress2}` : ''}</p>
+                                    <p className="font-serif text-sm text-gray-800 mb-6">{displayAddress.streetAddress1} {displayAddress.streetAddress2 ? `, ${displayAddress.streetAddress2}` : ''}</p>
                                     <div className="flex flex-wrap gap-x-16 gap-y-6">
                                         <div>
                                             <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.city}</span>
-                                            <span className="font-serif text-sm text-gray-800">{address.city}</span>
+                                            <span className="font-serif text-sm text-gray-800">{displayAddress.city}</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.country}</span>
-                                            <span className="font-serif text-sm text-gray-800">{address.country.country}</span>
+                                            <span className="font-serif text-sm text-gray-800">{displayAddress.country?.country || displayAddress.country}</span>
                                         </div>
                                         <div>
                                             <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.postalCode}</span>
-                                            <span className="font-english text-sm text-gray-800">{address.postalCode}</span>
+                                            <span className="font-english text-sm text-gray-800">{displayAddress.postalCode}</span>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="bg-[#F6F5F2] p-8">
-                                    <p className="font-serif text-sm text-gray-800 mb-6">Ramallah, Palestine, Al-Ersal Street, Building 5</p>
-                                    <div className="flex flex-wrap gap-x-16 gap-y-6">
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.city}</span>
-                                            <span className="font-serif text-sm text-gray-800">Ramallah</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.country}</span>
-                                            <span className="font-serif text-sm text-gray-800">Palestine</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.postalCode}</span>
-                                            <span className="font-english text-sm text-gray-800">12345</span>
-                                        </div>
-                                    </div>
+                                <div className="bg-[#F6F5F2] p-8 text-center">
+                                    <p className="font-serif text-sm text-gray-500">{language === 'ar' ? 'لم تقم بحفظ عنوان شحن بعد' : 'No shipping address saved yet'}</p>
+                                    <p className="font-serif text-xs text-gray-400 mt-2">{language === 'ar' ? 'سيظهر عنوانك هنا بعد أول طلب أو حفظه من الإعدادات' : 'Your address will appear here after your first order or saving it'}</p>
                                 </div>
                             )}
                         </div>
@@ -217,7 +228,7 @@ export default function ProfilePage() {
                             <p className="text-xs text-gray-500 font-serif">{t.profile.lastUpdated}</p>
                         </div>
 
-                        {/* Stats - Placeholder for now as we don't have order history in context yet */}
+                        {/* Stats - real data */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="bg-[#F6F5F2] p-8 text-center border border-gray-100 flex flex-col items-center justify-center min-h-[160px]">
                                 <div className="w-8 h-8 mx-auto mb-4 text-accent">
@@ -225,7 +236,7 @@ export default function ProfilePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
-                                <div className={language === 'ar' ? "text-2xl font-serif text-accent mb-2 font-english" : "text-2xl font-serif text-accent mb-2"}>12</div>
+                                <div className={language === 'ar' ? "text-2xl font-serif text-accent mb-2 font-english" : "text-2xl font-serif text-accent mb-2"}>{ordersCount ?? '-'}</div>
                                 <div className="text-xs text-gray-500 font-serif">{t.profile.ordersCompleted}</div>
                             </div>
                             <div className="bg-[#F6F5F2] p-8 text-center border border-gray-100 flex flex-col items-center justify-center min-h-[160px]">
@@ -234,7 +245,7 @@ export default function ProfilePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                     </svg>
                                 </div>
-                                <div className={language === 'ar' ? "text-2xl font-serif text-accent mb-2 font-english" : "text-2xl font-serif text-accent mb-2"}>8</div>
+                                <div className={language === 'ar' ? "text-2xl font-serif text-accent mb-2 font-english" : "text-2xl font-serif text-accent mb-2"}>{wishlistItems.length}</div>
                                 <div className="text-xs text-gray-500 font-serif">{t.profile.favoriteItems}</div>
                             </div>
                             <div className="bg-[#F0EEEB] p-8 text-center border border-gray-100 flex flex-col items-center justify-center min-h-[160px]">
@@ -243,7 +254,7 @@ export default function ProfilePage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                 </div>
-                                <div className="text-sm font-serif text-gray-800 mb-2">{formatDate(user.dateJoined) || 'January 2024'}</div>
+                                <div className="text-sm font-serif text-gray-800 mb-2">{formatDate(user.dateJoined)}</div>
                                 <div className="text-xs text-gray-500 font-serif">{t.profile.memberSince}</div>
                             </div>
                         </div>

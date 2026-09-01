@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerAccount, getCurrentUser, RegisterInput, getExternalAuthUrl, obtainExternalAccessTokens } from '@/lib/queries/auth';
+import { loginUser, registerAccount, getCurrentUser, RegisterInput, getExternalAuthUrl, obtainExternalAccessTokens, updateAccount, createAccountAddress, setDefaultAddress } from '@/lib/queries/auth';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (data.tokenCreate?.token) {
                 const token = data.tokenCreate.token;
+                const refreshToken = data.tokenCreate.refreshToken;
                 localStorage.setItem('token', token);
+                if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
 
                 // Fetch user data
                 const userData = await getCurrentUser(token);
@@ -106,12 +108,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (data.accountRegister?.user) {
                 // محاولة تسجيل دخول تلقائي
-                // إذا كان التحقق من الإيميل مفعّلاً في Saleor، سيفشل وسنعيد { success: true, requiresVerification: true }
                 const loginResult = await login(input.email, input.password);
                 if (loginResult.success) {
+                    // حفظ البيانات الشخصية (الاسم، الهاتف، المدينة) بعد تسجيل الدخول مباشرة
+                    try {
+                        const token = localStorage.getItem('token');
+                        if (token) {
+                            const firstName = (input as any).firstName?.trim();
+                            const lastName = (input as any).lastName?.trim();
+                            const phone = (input as any).phone?.trim();
+                            const city = (input as any).city?.trim();
+
+                            if (firstName || lastName) {
+                                await updateAccount(token, { firstName: firstName || '', lastName: lastName || '' });
+                            }
+                            if (phone || city) {
+                                const addrInput: any = {
+                                    firstName: firstName || 'User',
+                                    lastName: lastName || 'User',
+                                    streetAddress1: city ? `${city} - shipping address` : 'Address not set',
+                                    city: city || 'Ramallah',
+                                    country: 'PS' as any,
+                                    postalCode: '00000',
+                                    phone: phone || undefined,
+                                };
+                                const addrRes = await createAccountAddress(token, addrInput);
+                                const newId = addrRes?.accountAddressCreate?.address?.id;
+                                if (newId && !addrRes.accountAddressCreate.errors?.length) {
+                                    try { await setDefaultAddress(token, newId, 'SHIPPING'); } catch {}
+                                    try { await setDefaultAddress(token, newId, 'BILLING'); } catch {}
+                                }
+                                // Refresh user in context to reflect new data
+                                const fresh = await getCurrentUser(token);
+                                if (fresh?.me) setUser(fresh.me);
+                            } else if (firstName || lastName) {
+                                const fresh = await getCurrentUser(token);
+                                if (fresh?.me) setUser(fresh.me);
+                            }
+                        }
+                    } catch (profileErr) {
+                        console.error('Failed to save profile after register:', profileErr);
+                        // لا نفشل التسجيل بسبب هذا — المستخدم أنشئ بنجاح
+                    }
                     return { success: true };
                 }
-                // تسجيل الدخول فشل = Saleor يطلب تحقق الإيميل
+                // تسجيل الدخول فشل = Saleor يطلب تحقق الإيميل — البيانات ستُحفظ عند أول login بعد التحقق
                 return { success: true, requiresVerification: true } as any;
             }
 
@@ -152,10 +193,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 return { success: false, error: data.externalObtainAccessTokens.errors[0].message };
             }
 
-            const { token, user: authUser } = data.externalObtainAccessTokens || {};
+            const { token, refreshToken, user: authUser } = data.externalObtainAccessTokens || {};
             
             if (token) {
                 localStorage.setItem('token', token);
+                if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
                 
                 // Fetch full user data including addresses etc
                 const userData = await getCurrentUser(token);
@@ -179,6 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         setUser(null);
         router.push('/login');
     };

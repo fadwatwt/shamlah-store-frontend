@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { LoadingOverlay } from '../components/LoadingSpinner';
+import { formatPrice, getCurrencyForChannel } from '@/lib/utils/formatPrice';
 
 export default function CartPage() {
     const { t, dir, language } = useLanguage();
@@ -12,7 +13,8 @@ export default function CartPage() {
 
     const displayShipping = shippingPrice?.amount || 0;
     const total = totalPrice?.amount || (subtotal?.amount || 0);
-    const currency = t.common.currency;
+    const channelCurrency = subtotal?.currency || shippingPrice?.currency || getCurrencyForChannel();
+    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
 
     if (loading && items.length === 0) {
         return (
@@ -63,8 +65,7 @@ export default function CartPage() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <h3 className="font-bold text-lg text-gray-800">{name}</h3>
                                                 <div className="text-right">
-                                                    <div className="font-bold text-gray-900">{price} {t.common.currency}</div>
-                                                    {/* <div className="text-xs text-gray-500">Total: {price * line.quantity} {t.common.currency}</div> */}
+                                                    <div className="font-bold text-gray-900">{formatPrice(price, line.variant?.pricing?.price?.gross?.currency || channelCurrency, locale)}</div>
                                                 </div>
                                             </div>
                                             {/* Variant Name (Size/Color) */}
@@ -126,16 +127,16 @@ export default function CartPage() {
                             <div className="space-y-4 mb-8">
                                 <div className="flex justify-between text-gray-600">
                                     <span>{t.cart.subtotal}</span>
-                                    <span>{(subtotal?.amount || 0)} {t.common.currency}</span>
+                                    <span>{formatPrice(subtotal?.amount || 0, channelCurrency, locale)}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-600">
                                     <span>{t.cart.shipping}</span>
-                                    <span>{displayShipping > 0 ? `${displayShipping} ${t.common.currency}` : (language === 'ar' ? 'مجاني' : 'Free')}</span>
+                                    <span>{displayShipping > 0 ? formatPrice(displayShipping, channelCurrency, locale) : (language === 'ar' ? 'مجاني' : 'Free')}</span>
                                 </div>
                                 <div className="border-t border-gray-200 pt-4 mt-4">
                                     <div className="flex justify-between text-xl font-bold text-accent">
                                         <span>{t.cart.total}</span>
-                                        <span>{total} {t.common.currency}</span>
+                                        <span>{formatPrice(total, channelCurrency, locale)}</span>
                                     </div>
                                 </div>
                             </div>
