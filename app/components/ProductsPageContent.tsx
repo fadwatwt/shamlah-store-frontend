@@ -17,8 +17,8 @@ interface Product {
     quantityAvailable?: number;
     isPreorder?: boolean;
     attributes?: Array<{
-        attribute: { name: string };
-        values: Array<{ name: string }>;
+        attribute: { name: string; slug?: string };
+        values: Array<{ name: string; slug?: string }>;
     }>;
 }
 
@@ -68,10 +68,13 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
             result = result.filter(product => {
                 if (!product.attributes) return false;
                 return product.attributes.some(group => {
-                    const groupSlug = (group.attribute as any).slug?.toLowerCase()
+                    const groupSlug = group.attribute.slug?.toLowerCase()
                         ?? group.attribute.name.toLowerCase().replace(/\s+/g, '-');
                     if (groupSlug !== slug) return false;
-                    return group.values.some(v => values.includes(v.name.toLowerCase()));
+                    return group.values.some(v =>
+                        values.includes(v.name.toLowerCase()) ||
+                        (v.slug ? values.includes(v.slug.toLowerCase()) : false)
+                    );
                 });
             });
         });

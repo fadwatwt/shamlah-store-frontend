@@ -1,6 +1,7 @@
 import { getProducts } from '../lib/queries/products';
 import { getCategories } from '../lib/queries/categories';
-import { Product, Category } from '../lib/types/saleor';
+import { getCollections } from '../lib/queries/collections';
+import { Product, Category, Collection } from '../lib/types/saleor';
 import HomeContent from './components/HomeContent';
 
 function transformSaleorProduct(product: Product) {
@@ -41,6 +42,7 @@ function transformSaleorProduct(product: Product) {
 export default async function Home() {
   let bestSellers = [];
   let categories: Category[] = [];
+  let latestCollections: Collection[] = [];
 
   try {
     const products = await getProducts(4);
@@ -99,5 +101,12 @@ export default async function Home() {
     categories = [];
   }
 
-  return <HomeContent bestSellers={bestSellers} categories={categories} />;
+  try {
+    latestCollections = await getCollections(3);
+  } catch (error) {
+    console.error('Error fetching collections:', error);
+    latestCollections = [];
+  }
+
+  return <HomeContent bestSellers={bestSellers} categories={categories} latestCollections={latestCollections} />;
 }

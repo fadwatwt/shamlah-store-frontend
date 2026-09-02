@@ -4,51 +4,44 @@ import Image from 'next/image';
 import Link from 'next/link';
 import ProductCard, { ProductCardProps } from './ProductCard';
 import { useLanguage } from '../context/LanguageContext';
-import { Category } from '../../lib/types/saleor';
+import { Category, Collection } from '../../lib/types/saleor';
 
 interface HomeContentProps {
     bestSellers: ProductCardProps[];
     categories: Category[];
+    latestCollections?: Collection[];
 }
 
-export default function HomeContent({ bestSellers, categories: saleorCategories }: HomeContentProps) {
+export default function HomeContent({ bestSellers, categories: saleorCategories, latestCollections = [] }: HomeContentProps) {
     const { t, dir, language } = useLanguage();
 
-    // Fetch images strictly from Saleor category data
-    const getCategoryImage = (slug: string) => {
-        const category = saleorCategories.find(c => 
-            c.slug?.toLowerCase() === slug.toLowerCase() || 
-            c.name?.toLowerCase() === slug.toLowerCase()
-        );
-        
-        if (category?.backgroundImage?.url) {
-            return category.backgroundImage.url;
-        }
-        
-        // Return a generic placeholder only if Saleor data is missing
-        return `https://placehold.co/600x800/eeeeee/999999?text=Set+Image+in+Saleor+(${slug})`;
-    };
+    // Build category display cards dynamically from Saleor categories
+    const displayCategories = saleorCategories.map((category) => {
+        const slug = category.slug?.toLowerCase();
 
-    const displayCategories = [
-        {
-            title: t.home.categories.bags.title,
-            subtitle: t.home.categories.bags.subtitle,
-            image: getCategoryImage('bags'),
-            href: '/category/bags',
-        },
-        {
-            title: t.home.categories.clothes.title,
-            subtitle: t.home.categories.clothes.subtitle,
-            image: getCategoryImage('clothing'),
-            href: '/category/clothing',
-        },
-        {
-            title: t.home.categories.accessories.title,
-            subtitle: t.home.categories.accessories.subtitle,
-            image: getCategoryImage('accessories'),
-            href: '/category/accessories',
-        },
-    ];
+        // Promotional text from translations (title + subtitle per category)
+        const localCat = (t.home.categories as any)?.[slug === 'clothing' ? 'clothes' : slug];
+
+        const title = localCat?.title ||
+            category.translation?.name ||
+            category.name ||
+            category.slug;
+
+        const subtitle = (localCat?.subtitle ||
+            category.translation?.name ||
+            category.name ||
+            category.slug)?.toUpperCase();
+
+        const image = category.backgroundImage?.url ||
+            `https://placehold.co/600x800/eeeeee/999999?text=Set+Image+in+Saleor+(${category.slug})`;
+
+        return {
+            title,
+            subtitle,
+            image,
+            href: `/category/${category.slug}`,
+        };
+    });
 
     return (
         <main dir={dir}>
@@ -169,31 +162,37 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                             {t.home.browseCollections}
                         </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {displayCategories.map((category, index) => (
-                            <Link
-                                key={index}
-                                href={category.href}
-                                className="group relative overflow-hidden rounded-lg h-[550px] block"
-                            >
-                                <Image
-                                    src={category.image}
-                                    alt={category.title}
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 33vw"
-                                    className="object-cover smooth-transition group-hover:scale-110"
-                                    unoptimized={category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com') || category.image.includes('placehold.co')}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                                <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                    <h3 className="text-3xl font-bold mb-2">{category.title}</h3>
-                                    <p className="text-sm tracking-widest opacity-80">
-                                        {category.subtitle}
-                                    </p>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
+                    {displayCategories.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            {displayCategories.map((category) => (
+                                <Link
+                                    key={category.href}
+                                    href={category.href}
+                                    className="group relative overflow-hidden rounded-lg h-[550px] block"
+                                >
+                                    <Image
+                                        src={category.image}
+                                        alt={category.title}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 33vw"
+                                        className="object-cover smooth-transition group-hover:scale-110"
+                                        unoptimized={category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com') || category.image.includes('placehold.co')}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                                        <h3 className="text-3xl font-bold mb-2">{category.title}</h3>
+                                        <p className="text-sm tracking-widest opacity-80">
+                                            {category.subtitle}
+                                        </p>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-16 text-gray-500">
+                            {language === 'ar' ? 'لم تضف فئات بعد' : 'No categories added yet'}
+                        </div>
+                    )}
                 </div>
             </section>
 
@@ -220,24 +219,174 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                         </p>
                     </div>
 
-                    {/* New Collection Grid from image: wait, the image shows a large grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto mb-16">
-                        <div className="flex flex-col gap-4">
-                            <div className="relative h-[300px] md:h-[400px] w-full bg-gray-100 rounded-sm overflow-hidden">
-                                <Image
-                                    src="/c55a82c55d4a03a5e021e554af49768bda4fa39a.webp"
-                                    alt="Collection Image 1"
-                                    fill
-                                    sizes="(max-width: 1024px) 100vw, 50vw"
-                                    className="object-cover"
-                                    loading="lazy"
-                                    unoptimized
-                                />
+                    {/* Latest Collections Grid */}
+                    {latestCollections.length > 0 ? (
+                        latestCollections.length === 1 ? (
+                            <div className="max-w-3xl mx-auto mb-16">
+                                {(() => {
+                                    const collection = latestCollections[0];
+                                    const image = collection.backgroundImage?.url ||
+                                        collection.products?.edges?.[0]?.node?.thumbnail?.url;
+                                    const colName = (language === 'ar' && collection.translation?.name)
+                                        ? collection.translation.name
+                                        : collection.name;
+                                    return (
+                                        <Link
+                                            href={`/collections/${collection.slug}`}
+                                            className="relative h-[500px] w-full bg-gray-100 rounded-sm overflow-hidden group block"
+                                        >
+                                            {image ? (
+                                                <Image src={image} alt={colName} fill sizes="100vw" className="object-cover smooth-transition group-hover:scale-110" loading="lazy" unoptimized />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-secondary to-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-500 font-serif text-lg">{colName}</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+                                                <span className="text-sm tracking-wider text-white/80 uppercase">{language === 'ar' ? 'مجموعة' : 'Collection'}</span>
+                                                <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                            </div>
+                                        </Link>
+                                    );
+                                })()}
                             </div>
-                            <div className="relative h-[300px] w-full bg-gray-100 rounded-sm overflow-hidden">
+                        ) : latestCollections.length === 2 ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto mb-16">
+                                {latestCollections.map((collection) => {
+                                    const image = collection.backgroundImage?.url ||
+                                        collection.products?.edges?.[0]?.node?.thumbnail?.url;
+                                    const colName = (language === 'ar' && collection.translation?.name)
+                                        ? collection.translation.name
+                                        : collection.name;
+                                    return (
+                                        <Link key={collection.id} href={`/collections/${collection.slug}`} className="relative h-[380px] lg:h-[500px] w-full bg-gray-100 rounded-sm overflow-hidden group block">
+                                            {image ? (
+                                                <Image src={image} alt={colName} fill sizes="50vw" className="object-cover smooth-transition group-hover:scale-110" loading="lazy" unoptimized />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-secondary to-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-500 font-serif text-lg">{colName}</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-6">
+                                                <span className="text-sm tracking-wider text-white/80 uppercase">{language === 'ar' ? 'مجموعة' : 'Collection'}</span>
+                                                <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-2 gap-4 max-w-5xl mx-auto mb-16 lg:h-[720px]">
+                                {/* Featured: first (latest) collection spans two rows */}
+                                {(() => {
+                                    const collection = latestCollections[0];
+                                    const image = collection.backgroundImage?.url ||
+                                        collection.products?.edges?.[0]?.node?.thumbnail?.url;
+                                    const colName = (language === 'ar' && collection.translation?.name)
+                                        ? collection.translation.name
+                                        : collection.name;
+                                    return (
+                                        <Link
+                                            key={collection.id}
+                                            href={`/collections/${collection.slug}`}
+                                            className="relative h-[380px] lg:h-auto lg:row-span-2 w-full bg-gray-100 rounded-sm overflow-hidden group block"
+                                        >
+                                            {image ? (
+                                                <Image
+                                                    src={image}
+                                                    alt={colName}
+                                                    fill
+                                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                                    className="object-cover smooth-transition group-hover:scale-110"
+                                                    loading="lazy"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-secondary to-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-500 font-serif text-lg">{colName}</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-6">
+                                                <span className="text-sm tracking-wider text-white/80 uppercase">
+                                                    {language === 'ar' ? 'مجموعة' : 'Collection'}
+                                                </span>
+                                                <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                            </div>
+                                        </Link>
+                                    );
+                                })()}
+                                {latestCollections.slice(1, 3).map((collection) => {
+                                    const image = collection.backgroundImage?.url ||
+                                        collection.products?.edges?.[0]?.node?.thumbnail?.url;
+                                    const colName = (language === 'ar' && collection.translation?.name)
+                                        ? collection.translation.name
+                                        : collection.name;
+                                    return (
+                                        <Link
+                                            key={collection.id}
+                                            href={`/collections/${collection.slug}`}
+                                            className="relative h-[380px] lg:h-auto w-full bg-gray-100 rounded-sm overflow-hidden group block"
+                                        >
+                                            {image ? (
+                                                <Image
+                                                    src={image}
+                                                    alt={colName}
+                                                    fill
+                                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                                    className="object-cover smooth-transition group-hover:scale-110"
+                                                    loading="lazy"
+                                                    unoptimized
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-br from-secondary to-gray-200 flex items-center justify-center">
+                                                    <span className="text-gray-500 font-serif text-lg">{colName}</span>
+                                                </div>
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-6">
+                                                <span className="text-sm tracking-wider text-white/80 uppercase">
+                                                    {language === 'ar' ? 'مجموعة' : 'Collection'}
+                                                </span>
+                                                <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        )
+                    ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto mb-16">
+                            <div className="flex flex-col gap-4">
+                                <div className="relative h-[300px] md:h-[400px] w-full bg-gray-100 rounded-sm overflow-hidden">
+                                    <Image
+                                        src="/c55a82c55d4a03a5e021e554af49768bda4fa39a.webp"
+                                        alt="Collection Image 1"
+                                        fill
+                                        sizes="(max-width: 1024px) 100vw, 50vw"
+                                        className="object-cover"
+                                        loading="lazy"
+                                        unoptimized
+                                    />
+                                </div>
+                                <div className="relative h-[300px] w-full bg-gray-100 rounded-sm overflow-hidden">
+                                    <Image
+                                        src="/b560acf3b2086c012954bece6fa33fec22882962.webp"
+                                        alt="Collection Image 2"
+                                        fill
+                                        sizes="(max-width: 1024px) 100vw, 50vw"
+                                        className="object-cover"
+                                        loading="lazy"
+                                        unoptimized
+                                    />
+                                </div>
+                            </div>
+                            <div className="relative h-[616px] md:h-[716px] w-full bg-gray-100 rounded-sm overflow-hidden">
                                 <Image
-                                    src="/b560acf3b2086c012954bece6fa33fec22882962.webp"
-                                    alt="Collection Image 2"
+                                    src="/4749b555d8798833f88a4ddb7463b30c2a5486eb.webp"
+                                    alt="Collection Image 3"
                                     fill
                                     sizes="(max-width: 1024px) 100vw, 50vw"
                                     className="object-cover"
@@ -246,18 +395,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories 
                                 />
                             </div>
                         </div>
-                        <div className="relative h-[616px] md:h-[716px] w-full bg-gray-100 rounded-sm overflow-hidden">
-                            <Image
-                                src="/4749b555d8798833f88a4ddb7463b30c2a5486eb.webp"
-                                alt="Collection Image 3"
-                                fill
-                                sizes="(max-width: 1024px) 100vw, 50vw"
-                                className="object-cover"
-                                loading="lazy"
-                                unoptimized
-                            />
-                        </div>
-                    </div>
+                    )}
                     <Link
                         href="/collections"
                         className="inline-block border-2 border-accent text-accent px-10 py-3 font-semibold smooth-transition hover:bg-accent hover:text-white"

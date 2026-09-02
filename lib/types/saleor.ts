@@ -133,6 +133,49 @@ export interface CategoryResponse {
   category: Category | null;
 }
 
+export interface CollectionProduct {
+  id: string;
+  name: string;
+  slug: string;
+  thumbnail?: Image;
+  pricing?: ProductPricing;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  backgroundImage?: Image;
+  translation?: {
+    name?: string;
+    description?: string;
+  };
+  products?: {
+    edges: Array<{
+      node: Product;
+    }>;
+    pageInfo?: {
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string;
+      endCursor?: string;
+    };
+  };
+}
+
+export interface CollectionsResponse {
+  collections: {
+    edges: Array<{
+      node: Collection;
+    }>;
+  };
+}
+
+export interface CollectionResponse {
+  collection: Collection | null;
+}
+
 export interface ChannelsResponse {
   channels: Array<{
     slug: string;

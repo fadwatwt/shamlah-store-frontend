@@ -3,14 +3,13 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import ProductCard from './ProductCard';
-import { Category } from '../../lib/types/saleor';
-import FilterSidebar from './FilterSidebar';
+import { Collection } from '../../lib/types/saleor';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 interface ProductAttribute {
     attribute: { name: string; slug?: string };
-    values: Array<{ name: string; slug?: string }>;
+    values: Array<{ name: string }>;
 }
 
 interface Product {
@@ -26,13 +25,12 @@ interface Product {
     variants?: any[];
 }
 
-interface CategoryContentProps {
-    category: Category;
+interface CollectionContentProps {
+    collection: Collection;
     initialProducts: Product[];
-    channel?: string;
 }
 
-type SortKey = 'default' | 'most_relevant' | 'best_selling' | 'name_asc' | 'name_desc' | 'price_desc' | 'price_asc' | 'date_asc' | 'date_desc';
+type SortKey = 'default' | 'name_asc' | 'name_desc' | 'price_desc' | 'price_asc' | 'date_asc' | 'date_desc';
 
 function filterProducts(products: Product[], searchParams: ReturnType<typeof useSearchParams>): Product[] {
     let result = [...products];
@@ -57,7 +55,6 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
     // Attributes — format: attribute:slug:value
     const attrParams = searchParams.getAll('attributes');
     if (attrParams.length > 0) {
-        // Group by attribute slug (AND between groups, OR within group)
         const attrMap = new Map<string, string[]>();
         attrParams.forEach(attrStr => {
             const parts = attrStr.split(':');
@@ -76,10 +73,7 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
                     const groupSlug = group.attribute.slug?.toLowerCase()
                         ?? group.attribute.name.toLowerCase().replace(/\s+/g, '-');
                     if (groupSlug !== slug) return false;
-                    return group.values.some(v =>
-                        values.includes(v.name.toLowerCase()) ||
-                        (v.slug ? values.includes(v.slug.toLowerCase()) : false)
-                    );
+                    return group.values.some(v => values.includes(v.name.toLowerCase()));
                 });
             });
         });
@@ -97,15 +91,12 @@ function sortProducts(products: Product[], key: SortKey): Product[] {
         case 'price_desc':   return arr.sort((a, b) => b.price - a.price);
         case 'date_asc':     return arr.reverse();
         case 'date_desc':    return arr;
-        case 'best_selling': return arr.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
         default:             return arr;
     }
 }
 
 const SORT_OPTIONS: { value: SortKey; label: string; labelAr: string }[] = [
     { value: 'default',       label: 'Default sorting',        labelAr: 'مميز' },
-    { value: 'most_relevant', label: 'Most Relevant',           labelAr: 'الأكثر صلة' },
-    { value: 'best_selling',  label: 'Best Selling',            labelAr: 'الأكثر مبيعاً' },
     { value: 'name_asc',      label: 'Alphabetically, A-Z',    labelAr: 'أبجدياً، A-Z' },
     { value: 'name_desc',     label: 'Alphabetically, Z-A',    labelAr: 'أبجدياً، Z-A' },
     { value: 'price_desc',    label: 'Price, high to low',     labelAr: 'السعر من الأعلى للأدنى' },
@@ -114,16 +105,25 @@ const SORT_OPTIONS: { value: SortKey; label: string; labelAr: string }[] = [
     { value: 'date_desc',     label: 'Date, new to old',       labelAr: 'التاريخ، من الأحدث إلى الأقدم' },
 ];
 
-export default function CategoryContent({ category, initialProducts, channel }: CategoryContentProps) {
+export default function CollectionContent({ collection, initialProducts }: CollectionContentProps) {
     const { dir, language } = useLanguage();
     const searchParams = useSearchParams();
-    const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
     const [sortKey, setSortKey] = useState<SortKey>('default');
 
-    const categoryName = category.translation?.name || category.name;
-    const categoryDescription = category.translation?.description || category.description;
+    const getName = () => {
+        if (language === 'ar' && collection.translation?.name) return collection.translation.name;
+        return collection.name;
+    };
 
-    // Filter then sort — both happen instantly on the client
+    const getDescription = () => {
+        if (language === 'ar' && collection.translation?.description) return collection.translation.description;
+        return collection.description || '';
+    };
+
+    const name = getName();
+    const description = getDescription();
+    const bgImage = collection.backgroundImage?.url;
+
     const displayProducts = useMemo(
         () => sortProducts(filterProducts(initialProducts, searchParams), sortKey),
         [initialProducts, searchParams, sortKey]
@@ -132,32 +132,39 @@ export default function CategoryContent({ category, initialProducts, channel }: 
     return (
         <main className="pt-32 pb-24 px-6 min-h-screen" dir={dir}>
             <div className="container mx-auto">
-                {/* Category Header */}
-                <div className="text-center mb-16">
-                    <div className="flex justify-center mb-4">
-                        <Image src="/image2.png" alt="Separator" width={32} height={32} className="object-contain opacity-80" />
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-serif text-accent mb-4">{categoryName}</h1>
-                    {categoryDescription && (
-                        <p className="text-gray-600 text-base max-w-2xl mx-auto">{categoryDescription}</p>
+                {/* Collection Header */}
+                <div className="relative rounded-lg overflow-hidden mb-16">
+                    {bgImage && (
+                        <div className="absolute inset-0">
+                            <Image
+                                src={bgImage}
+                                alt={name}
+                                fill
+                                sizes="100vw"
+                                className="object-cover"
+                                unoptimized
+                            />
+                            <div className="absolute inset-0 bg-black/40" />
+                        </div>
                     )}
+                    <div className={`relative py-16 md:py-24 px-6 md:px-12 text-center ${bgImage ? 'text-white' : 'text-accent'}`}>
+                        <div className="flex justify-center mb-4">
+                            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L14.4 7.2L20 8.4L16 12.6L16.8 18.4L12 16L7.2 18.4L8 12.6L4 8.4L9.6 7.2L12 2Z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">{name}</h1>
+                        {description && (
+                            <p className={`text-base max-w-2xl mx-auto ${bgImage ? 'text-white/80' : 'text-gray-600'}`}>
+                                {description}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
                 {/* Toolbar */}
                 <div className="flex flex-wrap gap-4 items-center border-b border-gray-200 pb-4 mb-8">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
-                            className="flex items-center gap-2 text-gray-700 hover:text-accent font-medium"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                            </svg>
-                            <span>{language === 'ar' ? 'الفلترة' : 'Filter'}</span>
-                        </button>
-
-                        <span className="text-gray-300">|</span>
-
                         <span className="text-gray-500 text-sm">{language === 'ar' ? 'ترتيب حسب:' : 'Sort by:'}</span>
                         <select
                             value={sortKey}
@@ -177,36 +184,21 @@ export default function CategoryContent({ category, initialProducts, channel }: 
                     </span>
                 </div>
 
-                <div className="relative">
-                    <FilterSidebar
-                        mobileFiltersOpen={mobileFiltersOpen}
-                        setMobileFiltersOpen={setMobileFiltersOpen}
-                        categorySlug={category.slug}
-                    />
-
-                    <div className="w-full">
-                        {displayProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {displayProducts.map((product) => (
-                                    <ProductCard key={product.id} {...product} />
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-20 bg-gray-50 rounded-lg">
-                                <p className="text-gray-500 text-lg">
-                                    {language === 'ar'
-                                        ? 'لا توجد منتجات تطابق الفلتر المحدد'
-                                        : 'No products match the selected filters'}
-                                </p>
-                                {channel && process.env.NODE_ENV === 'development' && (
-                                    <div className="mt-4 text-xs text-gray-400 bg-gray-100 p-2 rounded max-w-md mx-auto text-left">
-                                        <p>Channel: {channel} | Category: {category.name} ({category.id})</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                {displayProducts.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {displayProducts.map((product) => (
+                            <ProductCard key={product.id} {...product} />
+                        ))}
                     </div>
-                </div>
+                ) : (
+                    <div className="text-center py-20 bg-gray-50 rounded-lg">
+                        <p className="text-gray-500 text-lg">
+                            {language === 'ar'
+                                ? 'لا توجد منتجات متاحة في هذه المجموعة حالياً'
+                                : 'No products available in this collection yet'}
+                        </p>
+                    </div>
+                )}
             </div>
         </main>
     );

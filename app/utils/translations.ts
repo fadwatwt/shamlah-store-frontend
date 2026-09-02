@@ -112,9 +112,11 @@ export const translations = {
             shopByCategory: 'تسوق حسب الفئة',
             browseCollections: 'تصفح مجموعاتنا المختارة',
             categories: {
-                bags: { title: 'حقائب فاخرة', subtitle: 'حقائب فاخرة' },
-                clothes: { title: 'ملابس راقية', subtitle: 'ملابس راقية' },
+                bags: { title: 'حقائب', subtitle: 'حقائب فاخرة' },
+                clothes: { title: 'ملابس', subtitle: 'ملابس راقية' },
                 accessories: { title: 'اكسسوارات', subtitle: 'اكسسوارات' },
+                scarves: { title: 'أوشحة', subtitle: 'أوشحة أنيقة' },
+                ceramics: { title: 'خزفيات', subtitle: 'خزفيات يدوية' },
             }
         },
         product: {
@@ -429,9 +431,11 @@ export const translations = {
             shopByCategory: 'Shop by Category',
             browseCollections: 'Browse our curated collections',
             categories: {
-                bags: { title: 'Luxury Handbags', subtitle: 'LUXURY HANDBAGS' },
-                clothes: { title: 'Elegant Clothes', subtitle: 'LUXURY CLOTHING' },
+                bags: { title: 'Bags', subtitle: 'LUXURY BAGS' },
+                clothes: { title: 'Clothes', subtitle: 'LUXURY CLOTHING' },
                 accessories: { title: 'Accessories', subtitle: 'ACCESSORIES' },
+                scarves: { title: 'Scarves', subtitle: 'ELEGANT SCARVES' },
+                ceramics: { title: 'Ceramics', subtitle: 'HANDCRAFTED CERAMICS' },
             }
         },
         product: {
