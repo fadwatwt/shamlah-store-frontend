@@ -3,7 +3,7 @@ import { CategoriesResponse, CategoryResponse } from '../types/saleor';
 import { request } from '../saleor-client';
 
 const getCategoriesQuery = (languageCode: string) => `
-  query GetCategories {
+  query GetCategories($channel: String) {
     categories(level: 0, first: 20) {
       edges {
         node {
@@ -13,6 +13,17 @@ const getCategoriesQuery = (languageCode: string) => `
           description
           backgroundImage {
             url
+          }
+          products(first: 3, channel: $channel) {
+            edges {
+              node {
+                id
+                name
+                thumbnail {
+                  url
+                }
+              }
+            }
           }
           translation(languageCode: ${languageCode}) {
             name
@@ -36,11 +47,12 @@ const getCategoriesQuery = (languageCode: string) => `
   }
 `;
 
-export const getCategories = cache(async function (languageCode: 'AR' | 'EN' = 'EN') {
+export const getCategories = cache(async function (languageCode: 'AR' | 'EN' = 'EN', channel?: string) {
   try {
     console.log('Fetching categories with languageCode:', languageCode);
     const query = getCategoriesQuery(languageCode);
-    const data = await request<CategoriesResponse>(query);
+    const activeChannel = channel || process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+    const data = await request<CategoriesResponse>(query, { channel: activeChannel });
     console.log('Categories fetched successfully:', data.categories.edges.length);
     return data.categories.edges.map(edge => edge.node);
   } catch (error: unknown) {

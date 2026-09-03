@@ -103,6 +103,15 @@ export interface Category {
   slug: string;
   description?: string;
   backgroundImage?: Image;
+  products?: {
+    edges: Array<{
+      node: {
+        id: string;
+        name: string;
+        thumbnail?: Image;
+      };
+    }>;
+  };
   translation?: {
     name: string;
     description?: string;

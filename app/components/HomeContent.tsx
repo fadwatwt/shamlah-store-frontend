@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import CategoryCardImage from './CategoryCardImage';
 import ProductCard, { ProductCardProps } from './ProductCard';
 import { useLanguage } from '../context/LanguageContext';
 import { Category, Collection } from '../../lib/types/saleor';
@@ -15,7 +16,17 @@ interface HomeContentProps {
 export default function HomeContent({ bestSellers, categories: saleorCategories, latestCollections = [] }: HomeContentProps) {
     const { t, dir, language } = useLanguage();
 
-    // Build category display cards dynamically from Saleor categories
+    // Local fallback images verified to match their category.
+    // (Only bags has one — other categories use their real product photos below.)
+    const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+        bags: '/category-bags.png',
+        clothing: '/category-clothes.png',
+        clothes: '/category-clothes.png',
+    };
+
+    // Build category display cards dynamically from Saleor categories.
+    // Image priority: Saleor backgroundImage -> real product photo from the
+    // same category -> local fallback -> placeholder.
     const displayCategories = saleorCategories.map((category) => {
         const slug = category.slug?.toLowerCase();
 
@@ -32,13 +43,20 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
             category.name ||
             category.slug)?.toUpperCase();
 
-        const image = category.backgroundImage?.url ||
-            `https://placehold.co/600x800/eeeeee/999999?text=Set+Image+in+Saleor+(${category.slug})`;
+        const productThumbs = (category.products?.edges || [])
+            .map(e => e.node.thumbnail?.url)
+            .filter(Boolean) as string[];
+
+        const images = [
+            category.backgroundImage?.url,
+            ...productThumbs,
+            CATEGORY_FALLBACK_IMAGES[slug],
+        ].filter(Boolean) as string[];
 
         return {
             title,
             subtitle,
-            image,
+            images,
             href: `/category/${category.slug}`,
         };
     });
@@ -170,13 +188,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                                     href={category.href}
                                     className="group relative overflow-hidden rounded-lg h-[550px] block"
                                 >
-                                    <Image
-                                        src={category.image}
+                                    <CategoryCardImage
+                                        sources={category.images}
                                         alt={category.title}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, 33vw"
-                                        className="object-cover smooth-transition group-hover:scale-110"
-                                        unoptimized={category.image.startsWith('http://localhost:8000') || category.image.includes('onrender.com') || category.image.includes('placehold.co')}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
                                     <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
