@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getProductsByCategoryIds } from '@/lib/queries/products';
 import { getCategoryBySlug } from '@/lib/queries/categories';
-import { Product, Category } from '@/lib/types/saleor';
+import { getAttributes } from '@/lib/queries/attributes';
+import { Product, Category, SaleorAttribute } from '@/lib/types/saleor';
 import CategoryContent from '../../components/CategoryContent';
 
 interface CategoryPageProps {
@@ -29,7 +30,7 @@ function transformSaleorProduct(product: Product, index: number) {
 
     return {
         id: product.id,
-        name: product.name,
+        name: product.translation?.name || product.name,
         price: Math.round(price),
         image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
@@ -98,11 +99,16 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
     // Fetch ALL products once — filtering happens client-side instantly
     let products: ReturnType<typeof transformSaleorProduct>[] = [];
+    let attributeOptions: SaleorAttribute[] = [];
     try {
         const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
-        const allProducts = await getProductsByCategoryIds({ categoryIds }, 100, channel, languageCode as 'AR' | 'EN');
+        const [allProducts, attrs] = await Promise.all([
+            getProductsByCategoryIds({ categoryIds }, 100, channel, languageCode as 'AR' | 'EN'),
+            getAttributes(languageCode as 'AR' | 'EN', channel),
+        ]);
         const unique = Array.from(new Map((allProducts as Product[]).map(p => [p.id, p])).values());
         products = unique.map((p, i) => transformSaleorProduct(p, i));
+        attributeOptions = attrs;
     } catch (error) {
         console.error('[CategoryPage] Error fetching products:', error);
     }
@@ -110,7 +116,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
     return (
         <Suspense fallback={null}>
-            <CategoryContent category={category} initialProducts={products} channel={channel} />
+            <CategoryContent category={category} initialProducts={products} channel={channel} attributeOptions={attributeOptions} />
         </Suspense>
     );
 }

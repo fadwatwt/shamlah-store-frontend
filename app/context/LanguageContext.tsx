@@ -24,22 +24,30 @@ export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageP
     const [isPending, startTransition] = useTransition();
     const [language, setLanguageState] = useState<Language>(initialLanguage);
 
-    // On mount, sync localStorage → cookie. If they differ from server, update state.
+    // On mount, localStorage is the source of truth for UI language.
+    // If it differs from what the server assumed (initialLanguage from cookie),
+    // sync the cookie and refetch server data so product/category translations match.
     useEffect(() => {
         const savedLang = localStorage.getItem('language') as Language;
         if (savedLang === 'ar' || savedLang === 'en') {
-            if (savedLang !== language) {
+            // Keep cookie in sync with localStorage
+            document.cookie = `language=${savedLang};path=/;max-age=${60 * 60 * 24 * 30}`;
+            if (savedLang !== initialLanguage) {
                 setLanguageState(savedLang);
                 document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
                 document.documentElement.lang = savedLang;
+                // Server-rendered data (product names, categories, attributes)
+                // was fetched with the stale cookie language — refetch it.
+                startTransition(() => {
+                    router.refresh();
+                });
             }
-            // Keep cookie in sync with localStorage
-            document.cookie = `language=${savedLang};path=/;max-age=${60 * 60 * 24 * 30}`;
         } else {
             // First visit — persist server-detected language to localStorage
-            localStorage.setItem('language', language);
-            document.cookie = `language=${language};path=/;max-age=${60 * 60 * 24 * 30}`;
+            localStorage.setItem('language', initialLanguage);
+            document.cookie = `language=${initialLanguage};path=/;max-age=${60 * 60 * 24 * 30}`;
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const setLanguage = (lang: Language) => {

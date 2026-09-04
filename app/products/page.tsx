@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 import { getProducts } from '@/lib/queries/products';
-import { Product } from '@/lib/types/saleor';
+import { getAttributes } from '@/lib/queries/attributes';
+import { Product, SaleorAttribute } from '@/lib/types/saleor';
 import ProductsPageContent from '../components/ProductsPageContent';
 
 function transformSaleorProduct(product: Product) {
@@ -23,7 +25,7 @@ function transformSaleorProduct(product: Product) {
 
     return {
         id: product.id,
-        name: product.name,
+        name: product.translation?.name || product.name,
         price: Math.round(price),
         image: image,
         rating: 5,
@@ -36,10 +38,19 @@ function transformSaleorProduct(product: Product) {
 
 export default async function ProductsPage() {
     let products = [];
+    let attributeOptions: SaleorAttribute[] = [];
+
+    const cookieStore = await cookies();
+    const language = cookieStore.get('language')?.value || 'en';
+    const languageCode = language === 'ar' ? 'AR' : 'EN';
 
     try {
-        const saleorProducts = await getProducts(100);
+        const [saleorProducts, attrs] = await Promise.all([
+            getProducts(100, 'default-channel', languageCode as 'AR' | 'EN'),
+            getAttributes(languageCode as 'AR' | 'EN'),
+        ]);
         products = saleorProducts.map(transformSaleorProduct);
+        attributeOptions = attrs;
         console.log("BEST SELLERS DETECTED IN PRODUCTS PAGE:", products.filter(p => p.isBestSeller).map(p => p.name));
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -92,7 +103,7 @@ export default async function ProductsPage() {
 
     return (
         <Suspense fallback={<div className="min-h-screen pt-32 text-center text-gray-500">Loading products...</div>}>
-            <ProductsPageContent initialProducts={products} />
+            <ProductsPageContent initialProducts={products} attributeOptions={attributeOptions} />
         </Suspense>
     );
 }

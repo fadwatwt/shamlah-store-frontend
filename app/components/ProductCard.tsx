@@ -9,6 +9,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { ProductVariant } from '../../lib/types/saleor';
 import { formatPrice, getCurrencyForChannel } from '@/lib/utils/formatPrice';
+import { extractHexColors, isHandmadeProduct } from '@/lib/utils/attributes';
 
 export interface ProductCardProps {
     id: string;
@@ -21,7 +22,7 @@ export interface ProductCardProps {
     quantityAvailable?: number;
     isPreorder?: boolean;
     attributes?: Array<{
-        attribute: { name: string };
+        attribute: { name: string; slug?: string };
         values: Array<{ name: string }>;
     }>;
     variants?: ProductVariant[];
@@ -40,23 +41,14 @@ export default function ProductCard({
     attributes = [],
     variants = [],
 }: ProductCardProps) {
-    const { language } = useLanguage();
+    const { language, t } = useLanguage();
     const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const { addToCart } = useCart();
 
     const [addingToCart, setAddingToCart] = useState(false);
 
-    const productColors = useMemo(() => {
-        const colorAttr = attributes?.find(a => {
-            const name = a.attribute.name?.toLowerCase();
-            return name === 'color' || name === 'colors' || name === 'اللون' || name === 'ألوان';
-        });
-        if (!colorAttr) return [];
-        return colorAttr.values
-            .map(v => v.name)
-            .filter(hex => /^#[0-9a-f]{3,8}$/i.test(hex));
-    }, [attributes]);
+    const productColors = useMemo(() => extractHexColors(attributes).map(c => c.hex), [attributes]);
 
     const handleAddToCart = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -137,6 +129,13 @@ export default function ProductCard({
                     {isBestSeller && (
                         <div className="bg-accent text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
                             {language === 'ar' ? 'الأكثر مبيعاً' : 'Best Seller'}
+                        </div>
+                    )}
+
+                    {/* Handmade Badge */}
+                    {isHandmadeProduct(attributes) && (
+                        <div className="bg-accent text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
+                            {t.product.handmade}
                         </div>
                     )}
                 </div>
@@ -238,7 +237,9 @@ export default function ProductCard({
 
                     {/* Price */}
                     <p className="text-xl text-center font-semibold text-accent mb-3">
-                        {formatPrice(price, currency || getCurrencyForChannel(), language === 'ar' ? 'ar-EG' : 'en-US')}
+                        {language === 'ar'
+                            ? `${Math.round(price).toLocaleString('ar-EG')} ${t.common.currency}`
+                            : formatPrice(price, currency || getCurrencyForChannel(), 'en-US')}
                     </p>
 
                     {/* Colors */}

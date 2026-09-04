@@ -119,6 +119,18 @@ export const translations = {
                 ceramics: { title: 'خزفيات', subtitle: 'خزفيات يدوية' },
             }
         },
+        filters: {
+            title: 'الفلترة',
+            close: 'إغلاق الفلترة',
+            availability: 'التوفر',
+            inStock: 'متوفر الآن',
+            outOfStock: 'نفد من المخزون',
+            price: 'السعر',
+            minPrice: 'الحد الأدنى',
+            maxPrice: 'الحد الأقصى',
+            clearAll: 'مسح الكل',
+            viewResults: 'عرض النتائج',
+        },
         product: {
             breadcrumb: { home: 'الرئيسية', store: 'المتجر' },
             new: 'جديد',
@@ -134,6 +146,7 @@ export const translations = {
             quantity: 'الكمية',
             color: 'اللون',
             buyNow: 'شراء سريع',
+            handmade: 'يدوي',
         },
         cart: {
             title: 'سلة التسوق',
@@ -438,6 +451,18 @@ export const translations = {
                 ceramics: { title: 'Ceramics', subtitle: 'HANDCRAFTED CERAMICS' },
             }
         },
+        filters: {
+            title: 'Filters',
+            close: 'Close filters',
+            availability: 'Availability',
+            inStock: 'In stock',
+            outOfStock: 'Out of stock',
+            price: 'Price',
+            minPrice: 'Min',
+            maxPrice: 'Max',
+            clearAll: 'Clear All',
+            viewResults: 'View Results',
+        },
         product: {
             breadcrumb: { home: 'Home', store: 'Shop' },
             new: 'New',
@@ -453,6 +478,7 @@ export const translations = {
             quantity: 'Quantity',
             color: 'Color',
             buyNow: 'Quick Buy',
+            handmade: 'Handmade',
         },
         cart: {
             title: 'Shopping Cart',

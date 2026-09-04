@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { getProducts } from '../lib/queries/products';
 import { getCategories } from '../lib/queries/categories';
 import { getCollections } from '../lib/queries/collections';
@@ -26,7 +27,7 @@ function transformSaleorProduct(product: Product) {
 
   return {
     id: product.id,
-    name: product.name,
+    name: product.translation?.name || product.name,
     price: Math.round(price),
     currency,
     image: image,
@@ -44,8 +45,12 @@ export default async function Home() {
   let categories: Category[] = [];
   let latestCollections: Collection[] = [];
 
+  const cookieStore = await cookies();
+  const language = cookieStore.get('language')?.value || 'en';
+  const languageCode = language === 'ar' ? 'AR' : 'EN';
+
   try {
-    const products = await getProducts(4);
+    const products = await getProducts(4, 'default-channel', languageCode as 'AR' | 'EN');
     bestSellers = products.map(transformSaleorProduct);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -95,14 +100,14 @@ export default async function Home() {
   }
 
   try {
-    categories = await getCategories();
+    categories = await getCategories(languageCode as 'AR' | 'EN');
   } catch (error) {
     console.error('Error fetching categories:', error);
     categories = [];
   }
 
   try {
-    latestCollections = await getCollections(3);
+    latestCollections = await getCollections(3, 'default-channel', languageCode as 'AR' | 'EN');
   } catch (error) {
     console.error('Error fetching collections:', error);
     latestCollections = [];

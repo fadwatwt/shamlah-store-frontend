@@ -39,10 +39,17 @@ export interface ProductVariant {
     attribute: {
       name: string;
       slug: string;
+      translation?: {
+        name?: string;
+      } | null;
     };
     values: Array<{
       name: string;
+      slug?: string;
       value?: string;
+      translation?: {
+        name?: string;
+      } | null;
     }>;
   }>;
   translation?: {
@@ -67,9 +74,17 @@ export interface Product {
     attribute: {
       name: string;
       slug: string;
+      translation?: {
+        name?: string;
+      } | null;
     };
     values: Array<{
       name: string;
+      slug?: string;
+      richText?: string | null;
+      translation?: {
+        name?: string;
+      } | null;
     }>;
   }>;
   translation?: {
@@ -190,4 +205,43 @@ export interface ChannelsResponse {
     slug: string;
     currencyCode: string;
   }>;
+}
+
+export interface SaleorAttributeChoice {
+  id: string;
+  name: string;
+  slug: string;
+  translation?: {
+    name?: string;
+  } | null;
+}
+
+export interface SaleorAttribute {
+  id: string;
+  name: string;
+  slug: string;
+  translation?: {
+    name?: string;
+  } | null;
+  choices?: SaleorAttributeChoice[];
+}
+
+export interface AttributesResponse {
+  attributes: {
+    edges: Array<{
+      node: {
+        id: string;
+        name: string;
+        slug: string;
+        translation?: {
+          name?: string;
+        } | null;
+        choices?: {
+          edges: Array<{
+            node: SaleorAttributeChoice;
+          }>;
+        };
+      };
+    }>;
+  };
 }

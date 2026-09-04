@@ -1,17 +1,86 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getCategoryFilterConfig, FilterGroup, attributeParam } from './filterConfig';
+import { SaleorAttribute } from '../../lib/types/saleor';
+import { isColorAttribute } from '../../lib/utils/attributes';
+
+// Builds the attribute URL param value. The backend filter matches by value slug.
+function attributeParam(attributeSlug: string, valueSlug: string): string {
+    return `attribute:${attributeSlug}:${valueSlug}`;
+}
+
+interface FilterProductAttribute {
+    attribute: {
+        name: string;
+        slug?: string;
+        translation?: { name?: string } | null;
+    };
+    values: Array<{
+        name: string;
+        slug?: string;
+        translation?: { name?: string } | null;
+    }>;
+}
+
+interface FilterProduct {
+    attributes?: FilterProductAttribute[];
+}
 
 interface FilterSidebarProps {
     mobileFiltersOpen: boolean;
     setMobileFiltersOpen: (open: boolean) => void;
     categorySlug?: string;
+    products?: FilterProduct[];
+    attributeOptions?: SaleorAttribute[];
+}
+
+// A single filterable group derived from Saleor attributes
+interface FilterGroup {
+    attributeSlug: string;
+    label: string;
+    values: Array<{ value: string; label: string }>;
 }
 
 type LocalFilters = Record<string, string[]>;
+
+// Internal/system attributes that should not appear as user-facing filters
+// (color is presented as native swatches, notes/labels/best seller are metadata).
+const EXCLUDED_ATTRIBUTE_SLUGS = new Set([
+    'color',
+    'colors',
+    'product-notes',
+    'product-label',
+    'label',
+    'best-seller',
+    'care-instructions',
+]);
+const EXCLUDED_ATTRIBUTE_NAMES = new Set([
+    'color',
+    'colors',
+    'product notes',
+    'product label',
+    'label',
+    'best seller',
+    'care instructions',
+    'اللون',
+    'ألوان',
+    'ملاحظات المنتج',
+    'الأكثر مبيعاً',
+    'تعليمات العناية',
+]);
+
+function isExcludedAttribute(attr: FilterProductAttribute): boolean {
+    // Color attributes store hex codes as value names —
+    // they render as swatches, not as filter checkboxes.
+    if (isColorAttribute(attr.attribute)) return true;
+    const slug = attr.attribute.slug?.toLowerCase() || '';
+    const name = attr.attribute.name?.toLowerCase() || '';
+    if (slug && EXCLUDED_ATTRIBUTE_SLUGS.has(slug)) return true;
+    if (name && EXCLUDED_ATTRIBUTE_NAMES.has(name)) return true;
+    return false;
+}
 
 function parseParams(params: ReturnType<typeof useSearchParams>): LocalFilters {
     const result: LocalFilters = {};
@@ -22,20 +91,94 @@ function parseParams(params: ReturnType<typeof useSearchParams>): LocalFilters {
     return result;
 }
 
-export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug }: FilterSidebarProps) {
-    const { language } = useLanguage();
+export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug, products, attributeOptions }: FilterSidebarProps) {
+    const { language, t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const config = getCategoryFilterConfig(categorySlug);
-    const groups: FilterGroup[] = config.groups;
+    // Build filter groups dynamically from Saleor attribute definitions + products.
+    // - Attribute definitions (attributeOptions) provide EVERY predefined value + translation.
+    // - Products contribute any extra values (e.g. free-text attributes with no choices).
+    // Groups only include attributes actually used by the listed products.
+    const groups: FilterGroup[] = useMemo(() => {
+        if (!products || products.length === 0) return [];
+
+        // Index Saleor attribute definitions by slug for full value lists
+        const definitions = new Map<string, SaleorAttribute>();
+        for (const def of attributeOptions || []) {
+            if (def.slug) definitions.set(def.slug, def);
+        }
+
+        const attrGroups = new Map<string, { attributeSlug: string; label: string; values: Map<string, string> }>();
+
+        // Seed groups + full value lists from Saleor definitions (only for attributes
+        // present on the listed products, so filters stay relevant to the category)
+        const usedSlugs = new Set<string>();
+        for (const product of products) {
+            for (const attr of product.attributes || []) {
+                if (isExcludedAttribute(attr)) continue;
+                if (attr.attribute.slug) usedSlugs.add(attr.attribute.slug);
+            }
+        }
+        for (const slug of usedSlugs) {
+            const def = definitions.get(slug);
+            if (!def) continue;
+            const label = def.translation?.name || def.name;
+            const values = new Map<string, string>();
+            for (const choice of def.choices || []) {
+                const valueSlug = choice.slug || choice.name;
+                if (!valueSlug) continue;
+                values.set(valueSlug, choice.translation?.name || choice.name);
+            }
+            attrGroups.set(slug, { attributeSlug: slug, label, values });
+        }
+
+        // Merge in values found on products (covers values missing from definitions)
+        for (const product of products) {
+            if (!product.attributes) continue;
+            for (const attr of product.attributes) {
+                if (isExcludedAttribute(attr)) continue;
+                const slug = attr.attribute.slug;
+                if (!slug) continue;
+
+                // Attribute group name — prefer Saleor translation, fallback to original name
+                const attrName = attr.attribute.translation?.name || attr.attribute.name;
+
+                if (!attrGroups.has(slug)) {
+                    attrGroups.set(slug, { attributeSlug: slug, label: attrName, values: new Map() });
+                }
+                const group = attrGroups.get(slug)!;
+                if (group.label === attr.attribute.name && attr.attribute.translation?.name) {
+                    group.label = attr.attribute.translation.name;
+                }
+
+                // Collect each value (slug -> display label). Prefer Saleor translation.
+                for (const val of attr.values) {
+                    const valueSlug = val.slug || val.name;
+                    if (!valueSlug) continue;
+                    const valueLabel = val.translation?.name || val.name;
+                    if (!group.values.has(valueSlug)) {
+                        group.values.set(valueSlug, valueLabel);
+                    } else if (group.values.get(valueSlug) === val.name && val.translation?.name) {
+                        group.values.set(valueSlug, val.translation.name);
+                    }
+                }
+            }
+        }
+
+        return Array.from(attrGroups.values()).map(g => ({
+            attributeSlug: g.attributeSlug,
+            label: g.label,
+            values: Array.from(g.values.entries()).map(([value, label]) => ({ value, label })),
+        }));
+    }, [products, attributeOptions]);
 
     const initialExpanded: Record<string, boolean> = {
         availability: true,
         price: true,
     };
     groups.forEach((g, i) => {
-        initialExpanded[g.key] = i < 2; // expand first two attribute groups by default
+        initialExpanded[g.attributeSlug] = i < 2; // expand first two attribute groups by default
     });
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(initialExpanded);
 
@@ -108,8 +251,6 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         router.push(window.location.pathname, { scroll: false });
     };
 
-    const label = (item: { en: string; ar: string }) => (language === 'ar' ? item.ar : item.en);
-
     return (
         <>
             {/* Backdrop */}
@@ -129,8 +270,8 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             >
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">{language === 'ar' ? 'الفلترة' : 'Filters'}</h2>
-                    <button onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters" className="p-2 hover:bg-gray-100 rounded-full smooth-transition">
+                    <h2 className="text-xl font-bold">{t.filters.title}</h2>
+                    <button onClick={() => setMobileFiltersOpen(false)} aria-label={t.filters.close} className="p-2 hover:bg-gray-100 rounded-full smooth-transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
@@ -138,12 +279,12 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 {/* Availability Filter */}
                 <div className="border-b border-gray-100 pb-6">
                     <button onClick={() => toggleSection('availability')} className="flex items-center justify-between w-full mb-4 group">
-                        <span className="font-semibold text-gray-800">{language === 'ar' ? 'التوفر' : 'Availability'}</span>
+                        <span className="font-semibold text-gray-800">{t.filters.availability}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.availability ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {expandedSections.availability && (
                         <div className="space-y-3">
-                            {[{ id: 'IN_STOCK', label: { en: 'In stock', ar: 'متوفر الآن' } }, { id: 'OUT_OF_STOCK', label: { en: 'Out of stock', ar: 'نفد من المخزون' } }].map((item) => (
+                            {[{ id: 'IN_STOCK', label: t.filters.inStock }, { id: 'OUT_OF_STOCK', label: t.filters.outOfStock }].map((item) => (
                                 <label key={item.id} className="flex items-center gap-3 cursor-pointer group">
                                     <input
                                         type="checkbox"
@@ -152,7 +293,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                         className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
                                     />
                                     <span className="text-gray-600 group-hover:text-accent transition-colors">
-                                        {label(item.label)}
+                                        {item.label}
                                     </span>
                                 </label>
                             ))}
@@ -163,14 +304,14 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 {/* Price Filter */}
                 <div className="border-b border-gray-100 pb-6">
                     <button onClick={() => toggleSection('price')} className="flex items-center justify-between w-full mb-4 group">
-                        <span className="font-semibold text-gray-800">{language === 'ar' ? 'السعر' : 'Price'}</span>
+                        <span className="font-semibold text-gray-800">{t.filters.price}</span>
                         <svg className={`w-4 h-4 transition-transform ${expandedSections.price ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {expandedSections.price && (
                         <div className="flex items-center gap-4 mb-3">
                             <input
                                 type="number"
-                                placeholder={language === 'ar' ? 'الحد الأدنى' : 'Min'}
+                                placeholder={t.filters.minPrice}
                                 value={priceMin}
                                 onChange={(e) => setPriceMin(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
@@ -178,7 +319,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                             <span className="text-gray-400">-</span>
                             <input
                                 type="number"
-                                placeholder={language === 'ar' ? 'الحد الأقصى' : 'Max'}
+                                placeholder={t.filters.maxPrice}
                                 value={priceMax}
                                 onChange={(e) => setPriceMax(e.target.value)}
                                 className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
@@ -187,13 +328,13 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                     )}
                 </div>
 
-                {/* Category-specific Attribute Filters */}
+                {/* Category-specific Attribute Filters (built from Saleor attributes) */}
                 {groups.map((group) => {
-                    const expanded = !!expandedSections[group.key];
+                    const expanded = !!expandedSections[group.attributeSlug];
                     return (
-                        <div key={group.key} className="border-b border-gray-100 pb-6">
-                            <button onClick={() => toggleSection(group.key)} className="flex items-center justify-between w-full mb-4 group">
-                                <span className="font-semibold text-gray-800">{label(group.label)}</span>
+                        <div key={group.attributeSlug} className="border-b border-gray-100 pb-6">
+                            <button onClick={() => toggleSection(group.attributeSlug)} className="flex items-center justify-between w-full mb-4 group">
+                                <span className="font-semibold text-gray-800">{group.label}</span>
                                 <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </button>
                             {expanded && (
@@ -209,7 +350,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                                     className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
                                                 />
                                                 <span className="text-gray-600 group-hover:text-accent transition-colors">
-                                                    {label(item.label)}
+                                                    {item.label}
                                                 </span>
                                             </label>
                                         );
@@ -226,13 +367,13 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         onClick={clearAll}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded text-sm text-gray-700 hover:border-gray-400"
                     >
-                        {language === 'ar' ? 'مسح الكل' : 'Clear All'}
+                        {t.filters.clearAll}
                     </button>
                     <button
                         onClick={applyFilters}
                         className="flex-1 px-4 py-2 bg-accent text-white rounded text-sm hover:bg-[#5a1214]"
                     >
-                        {language === 'ar' ? 'عرض النتائج' : 'View Results'}
+                        {t.filters.viewResults}
                     </button>
                 </div>
             </aside>

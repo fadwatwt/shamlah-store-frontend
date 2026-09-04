@@ -9,6 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { getProductsByCategory } from '@/lib/queries/products';
+import { extractHexColors, isColorAttribute, isHandmadeProduct, isHexColor } from '@/lib/utils/attributes';
 import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
 
@@ -19,8 +20,8 @@ interface ProductDetailsProps {
     images: string[];
     sizes: string[];
     attributes?: Array<{
-        attribute: { name: string; slug: string; translation?: { name: string } | null };
-        values: Array<{ name: string; slug?: string; richText?: string | null; translation?: { name: string } | null }>;
+        attribute: { name: string; slug: string; translation?: { name?: string } | null };
+        values: Array<{ name: string; slug?: string; richText?: string | null; translation?: { name?: string } | null }>;
     }>;
     variants?: any[];
 }
@@ -183,21 +184,8 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
 
 
-    // Derive colors from the product's "Color"/"Colors" attribute (values are hex codes from Saleor)
-    const productColors = useMemo(() => {
-        if (!attributes || attributes.length === 0) return [];
-        const colorAttr = attributes.find(a => {
-            const slug = a.attribute.slug?.toLowerCase();
-            const name = a.attribute.name?.toLowerCase();
-            return slug === 'color' || slug === 'colors'
-                || name === 'color' || name === 'colors'
-                || name === 'اللون' || name === 'ألوان';
-        });
-        if (!colorAttr) return [];
-        return colorAttr.values
-            .map(v => ({ name: v.name, hex: v.name }))
-            .filter(c => /^#[0-9a-f]{3,8}$/i.test(c.hex));
-    }, [attributes]);
+    // Derive color swatches from the product's color attribute (values are hex codes from Saleor)
+    const productColors = useMemo(() => extractHexColors(attributes), [attributes]);
     const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
     useEffect(() => {
         setSelectedColor(productColors[0] ?? null);
@@ -336,11 +324,17 @@ export default function ProductDetails({ product, price, currency, images, sizes
         }
     };
 
-    // Handler for fallback size selection
+    // Handler for fallback size selection. The displayed label is a variant
+    // attribute value (translated), so resolve it back to the matching variant.
     const handleLegacySizeChange = (sizeName: string) => {
         setSelectedSize(sizeName);
-        // Try to find variant with this name
-        const variant = variants?.find((v: any) => v.name === sizeName);
+        const variant = variants?.find((v: any) => {
+            const attrValues: string[] = (v.attributes || []).flatMap((a: any) =>
+                (a.values || []).flatMap((val: any) => [val.translation?.name, val.name].filter(Boolean))
+            );
+            if (attrValues.includes(sizeName)) return true;
+            return v.translation?.name === sizeName || v.name === sizeName;
+        });
         if (variant) {
             setSelectedVariantId(variant.id);
             if (variant.images?.length > 0) {
@@ -349,8 +343,10 @@ export default function ProductDetails({ product, price, currency, images, sizes
         }
     };
 
-    // Mock colors - if no variant colors, keep mock
-    const hasColorAttribute = variantAttributes.has('Color') || variantAttributes.has('اللون');
+    // True when variants already expose a color selector (then the fallback swatches stay hidden)
+    const hasColorAttribute = Array.from(variantAttributes.keys()).some(key =>
+        isColorAttribute({ name: key }) || Array.from(variantAttributes.get(key) || []).every(v => isHexColor(v))
+    );
 
     // Translation handling
     const displayName = product.translation?.name || product.name || '';
@@ -436,6 +432,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 {selectedVariant?.preorder?.endDate && (
                                     <div className="bg-indigo-600 text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
                                         {language === 'ar' ? 'طلب مسبق' : 'Pre-Order'}
+                                    </div>
+                                )}
+
+                                {/* Handmade Badge */}
+                                {isHandmadeProduct(attributes) && (
+                                    <div className="bg-accent text-white px-3 py-1 rounded-sm text-xs font-medium uppercase tracking-wider">
+                                        {t.product.handmade}
                                     </div>
                                 )}
 
@@ -560,15 +563,32 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         <div className="space-y-6 mb-10 text-start">
 
                             {/* Dynamic Variant Selectors */}
-                            {Array.from(variantAttributes.entries()).map(([attrName, values]) => (
+                            {Array.from(variantAttributes.entries()).map(([attrName, values]) => {
+                                const valueList = Array.from(values);
+                                // Color groups (hex values) render as swatch circles, not text buttons
+                                const isSwatchGroup = valueList.length > 0 && valueList.every(v => isHexColor(v));
+                                return (
                                 <div key={attrName}>
                                     <h3 className="font-bold text-gray-900 mb-3">{attrName}</h3>
                                     <div className="flex justify-start gap-3 flex-wrap">
-                                        {Array.from(values).map((value) => {
-                                            const isSelected = selectedOptions[attrName] === value || (!selectedOptions[attrName] && Array.from(values)[0] === value);
+                                        {valueList.map((value) => {
+                                            const isSelected = selectedOptions[attrName] === value || (!selectedOptions[attrName] && valueList[0] === value);
 
                                             // Handling initialization visually if state is empty
                                             // Ideally we update state, but visual feedback works too
+
+                                            if (isSwatchGroup) {
+                                                return (
+                                                    <button
+                                                        key={value}
+                                                        onClick={() => handleOptionChange(attrName, value)}
+                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${isSelected ? 'border-accent scale-110' : 'border-transparent'}`}
+                                                        style={{ backgroundColor: value, boxShadow: '0 0 0 1px #e5e5e5' }}
+                                                        aria-label={value}
+                                                        title={value}
+                                                    />
+                                                );
+                                            }
 
                                             return (
                                                 <button
@@ -585,7 +605,8 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                         })}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
 
                             {/* Fallback for explicit Size/Color if no variants found (Legacy/Mock support) */}
                             {variantAttributes.size === 0 && (
@@ -696,18 +717,25 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                         {attributes.length > 0 ? (
                                             <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
                                                 {attributes.filter(attr => {
+                                                    if (isColorAttribute(attr.attribute)) return false;
                                                     const n = attr.attribute.name?.toLowerCase();
                                                     const s = attr.attribute.slug?.toLowerCase();
-                                                    return n !== 'color' && n !== 'colors' && n !== 'اللون' && n !== 'ألوان'
-                                                        && s !== 'color' && s !== 'colors'
-                                                        && n !== 'best seller' && s !== 'best-seller' && n !== 'الأكثر مبيعاً'
+                                                    return n !== 'best seller' && s !== 'best-seller' && n !== 'الأكثر مبيعاً'
                                                         && n !== 'product label' && n !== 'label' && s !== 'product-label' && s !== 'label'
                                                         && n !== 'product notes' && s !== 'product-notes' && n !== 'ملاحظات المنتج'
                                                         && !['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(attr.attribute.name);
-                                                }).map((attr, idx) => (
+                                                }).map(attr => ({
+                                                    attr,
+                                                    valueText: attr.values
+                                                        .map(v => v.translation?.name || v.name)
+                                                        .filter(Boolean)
+                                                        .join(', ')
+                                                        .trim(),
+                                                })).filter(({ valueText }) => valueText.length > 0)
+                                                .map(({ attr, valueText }, idx) => (
                                                     <li key={idx}>
                                                         <span className="font-semibold">{attr.attribute.translation?.name || attr.attribute.name}:</span>{' '}
-                                                        {attr.values.map(v => v.translation?.name || v.name).join(', ')}
+                                                        {valueText}
                                                     </li>
                                                 ))}
                                             </ul>

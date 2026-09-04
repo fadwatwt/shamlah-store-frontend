@@ -9,7 +9,7 @@ const getActiveChannel = async (providedChannel?: string): Promise<string> => {
   return 'default-channel';
 };
 
-const GET_COLLECTIONS = `
+const GET_COLLECTIONS = (languageCode: string) => `
   query GetCollections($first: Int, $channel: String) {
     collections(first: $first, channel: $channel, sortBy: { field: PUBLISHED_AT, direction: DESC }) {
       edges {
@@ -18,7 +18,7 @@ const GET_COLLECTIONS = `
           name
           slug
           description
-          translation(languageCode: AR) {
+          translation(languageCode: ${languageCode}) {
             name
             description
           }
@@ -54,14 +54,14 @@ const GET_COLLECTIONS = `
   }
 `;
 
-const GET_COLLECTION_BY_SLUG = `
+const GET_COLLECTION_BY_SLUG = (languageCode: string) => `
   query GetCollectionBySlug($slug: String!, $channel: String) {
     collection(slug: $slug, channel: $channel) {
       id
       name
       slug
       description
-      translation(languageCode: AR) {
+      translation(languageCode: ${languageCode}) {
         name
         description
       }
@@ -76,7 +76,7 @@ const GET_COLLECTION_BY_SLUG = `
             name
             slug
             description
-            translation(languageCode: AR) {
+            translation(languageCode: ${languageCode}) {
               id
               name
               description
@@ -121,11 +121,17 @@ const GET_COLLECTION_BY_SLUG = `
               attribute {
                 name
                 slug
+                translation(languageCode: ${languageCode}) {
+                  name
+                }
               }
               values {
                 name
                 slug
                 richText
+                translation(languageCode: ${languageCode}) {
+                  name
+                }
               }
             }
           }
@@ -141,10 +147,11 @@ const GET_COLLECTION_BY_SLUG = `
   }
 `;
 
-export const getCollections = cache(async function (first: number = 20, channel: string = 'default-channel') {
+export const getCollections = cache(async function (first: number = 20, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<CollectionsResponse>(GET_COLLECTIONS, { first, channel: activeChannel });
+    const query = GET_COLLECTIONS(languageCode);
+    const data = await request<CollectionsResponse>(query, { first, channel: activeChannel });
     return data.collections.edges.map(edge => edge.node);
   } catch (error: unknown) {
     const err = error as any;
@@ -155,10 +162,11 @@ export const getCollections = cache(async function (first: number = 20, channel:
   }
 });
 
-export const getCollectionBySlug = cache(async function (slug: string, channel: string = 'default-channel') {
+export const getCollectionBySlug = cache(async function (slug: string, channel: string = 'default-channel', languageCode: 'AR' | 'EN' = 'EN') {
   try {
     const activeChannel = await getActiveChannel(channel);
-    const data = await request<CollectionResponse>(GET_COLLECTION_BY_SLUG, { slug, channel: activeChannel });
+    const query = GET_COLLECTION_BY_SLUG(languageCode);
+    const data = await request<CollectionResponse>(query, { slug, channel: activeChannel });
     return data.collection;
   } catch (error: unknown) {
     const err = error as any;

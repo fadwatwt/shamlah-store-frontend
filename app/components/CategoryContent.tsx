@@ -3,14 +3,14 @@
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import ProductCard from './ProductCard';
-import { Category } from '../../lib/types/saleor';
+import { Category, SaleorAttribute } from '../../lib/types/saleor';
 import FilterSidebar from './FilterSidebar';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
 interface ProductAttribute {
-    attribute: { name: string; slug?: string };
-    values: Array<{ name: string; slug?: string }>;
+    attribute: { name: string; slug?: string; translation?: { name?: string } | null };
+    values: Array<{ name: string; slug?: string; translation?: { name?: string } | null }>;
 }
 
 interface Product {
@@ -30,6 +30,7 @@ interface CategoryContentProps {
     category: Category;
     initialProducts: Product[];
     channel?: string;
+    attributeOptions?: SaleorAttribute[];
 }
 
 type SortKey = 'default' | 'most_relevant' | 'best_selling' | 'name_asc' | 'name_desc' | 'price_desc' | 'price_asc' | 'date_asc' | 'date_desc';
@@ -114,7 +115,7 @@ const SORT_OPTIONS: { value: SortKey; label: string; labelAr: string }[] = [
     { value: 'date_desc',     label: 'Date, new to old',       labelAr: 'التاريخ، من الأحدث إلى الأقدم' },
 ];
 
-export default function CategoryContent({ category, initialProducts, channel }: CategoryContentProps) {
+export default function CategoryContent({ category, initialProducts, channel, attributeOptions }: CategoryContentProps) {
     const { dir, language } = useLanguage();
     const searchParams = useSearchParams();
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -182,6 +183,8 @@ export default function CategoryContent({ category, initialProducts, channel }: 
                         mobileFiltersOpen={mobileFiltersOpen}
                         setMobileFiltersOpen={setMobileFiltersOpen}
                         categorySlug={category.slug}
+                        products={initialProducts}
+                        attributeOptions={attributeOptions}
                     />
 
                     <div className="w-full">

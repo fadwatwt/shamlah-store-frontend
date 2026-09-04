@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { SaleorAttribute } from '../../lib/types/saleor';
 import ProductCard from './ProductCard';
 import FilterSidebar from './FilterSidebar';
 import Image from 'next/image';
@@ -17,13 +18,14 @@ interface Product {
     quantityAvailable?: number;
     isPreorder?: boolean;
     attributes?: Array<{
-        attribute: { name: string; slug?: string };
-        values: Array<{ name: string; slug?: string }>;
+        attribute: { name: string; slug?: string; translation?: { name?: string } | null };
+        values: Array<{ name: string; slug?: string; translation?: { name?: string } | null }>;
     }>;
 }
 
 interface ProductsPageContentProps {
     initialProducts: Product[];
+    attributeOptions?: SaleorAttribute[];
 }
 
 type SortKey = 'default' | 'most_relevant' | 'best_selling' | 'name_asc' | 'name_desc' | 'price_desc' | 'price_asc' | 'date_asc' | 'date_desc';
@@ -109,7 +111,7 @@ const SORT_OPTIONS: { value: SortKey; label: string; labelAr: string }[] = [
     { value: 'date_desc',     label: 'Date, new to old',        labelAr: 'التاريخ، من الأحدث إلى الأقدم' },
 ];
 
-export default function ProductsPageContent({ initialProducts }: ProductsPageContentProps) {
+export default function ProductsPageContent({ initialProducts, attributeOptions }: ProductsPageContentProps) {
     const { dir, language } = useLanguage();
     const searchParams = useSearchParams();
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -183,6 +185,8 @@ export default function ProductsPageContent({ initialProducts }: ProductsPageCon
                     <FilterSidebar
                         mobileFiltersOpen={mobileFiltersOpen}
                         setMobileFiltersOpen={setMobileFiltersOpen}
+                        products={initialProducts}
+                        attributeOptions={attributeOptions}
                     />
 
                     {/* Product Grid */}

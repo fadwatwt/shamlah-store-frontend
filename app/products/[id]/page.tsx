@@ -55,8 +55,31 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         'https://placehold.co/1000x1200/D2B48C/671618?text=Product'
     ];
 
-    // Extract sizes from variants names
-    const sizes = product.variants?.map(v => v.name) || [];
+    // Extract size options from variant attribute values (translated) — never
+    // raw variant names, which in Saleor are often internal codes like the SKU.
+    const isSizeAttribute = (attr: { name?: string; slug?: string }) => {
+        const s = `${attr.slug || ''} ${attr.name || ''}`.toLowerCase();
+        return s.includes('size') || s.includes('dimension') || s.includes('مقاس') || s.includes('حجم');
+    };
+    const translatedValue = (val: { name?: string; translation?: { name?: string } | null }) =>
+        val.translation?.name || val.name || '';
+    const variantSizeValues = (product.variants || []).flatMap(v => {
+        const attrs = v.attributes || [];
+        const sizeAttrs = attrs.filter(a => isSizeAttribute(a.attribute));
+        const source = sizeAttrs.length > 0 ? sizeAttrs : attrs;
+        return source.flatMap(a => (a.values || []).map(translatedValue));
+    }).filter(Boolean);
+    const productSizeValues = (product.attributes || [])
+        .filter(a => isSizeAttribute(a.attribute))
+        .flatMap(a => (a.values || []).map(translatedValue))
+        .filter(Boolean);
+    const variantNames = (product.variants || []).map(v => v.translation?.name || v.name).filter(Boolean);
+    // Deduplicate while preserving order
+    const sizes = Array.from(new Set(
+        variantSizeValues.length > 0 ? variantSizeValues
+            : productSizeValues.length > 0 ? productSizeValues
+                : variantNames
+    ));
 
     return (
         <ProductDetails

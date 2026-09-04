@@ -28,7 +28,7 @@ function transformSaleorProduct(product: Product, index: number) {
 
     return {
         id: product.id,
-        name: product.name,
+        name: product.translation?.name || product.name,
         price: Math.round(price),
         image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
@@ -45,11 +45,12 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
     const cookieStore = await cookies();
     const language = cookieStore.get('language')?.value || 'en';
+    const languageCode = language === 'ar' ? 'AR' : 'EN';
 
     let collection;
     try {
         const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
-        collection = await getCollectionBySlug(slug, channel);
+        collection = await getCollectionBySlug(slug, channel, languageCode as 'AR' | 'EN');
     } catch {
         return (
             <main className="pt-32 pb-24 px-6 min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
