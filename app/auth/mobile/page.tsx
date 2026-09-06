@@ -33,6 +33,22 @@ function MobileAuthContent() {
     const state = searchParams.get('state');
     const err = searchParams.get('error');
 
+    // Where to send the Saleor token when done. Kept in sessionStorage
+    // because Google strips query params when returning with ?code&state.
+    // Only app schemes are accepted (prevents open redirects).
+    const resolveReturnUrl = () => {
+      const fromParam = searchParams.get('returnUrl');
+      if (fromParam && /^(shmlh:\/\/|exp:\/\/)/.test(fromParam)) {
+        try { sessionStorage.setItem('shmlh-mobile-return', fromParam); } catch {}
+        return fromParam;
+      }
+      try {
+        const saved = sessionStorage.getItem('shmlh-mobile-return');
+        if (saved && /^(shmlh:\/\/|exp:\/\/)/.test(saved)) return saved;
+      } catch {}
+      return 'shmlh://auth';
+    };
+
     if (err) {
       setError(err);
       return;
@@ -48,8 +64,10 @@ function MobileAuthContent() {
           const token = data.externalObtainAccessTokens?.token;
           const refreshToken = data.externalObtainAccessTokens?.refreshToken;
           if (token) {
+            const base = resolveReturnUrl();
+            const sep = base.includes('?') ? '&' : '?';
             window.location.href =
-              `shmlh://auth?token=${encodeURIComponent(token)}` +
+              `${base}${sep}token=${encodeURIComponent(token)}` +
               (refreshToken ? `&refreshToken=${encodeURIComponent(refreshToken)}` : '');
           } else {
             setError('Failed to obtain access token');
@@ -59,6 +77,8 @@ function MobileAuthContent() {
       return;
     }
 
+    // First visit from the app — remember returnUrl, then go to Google.
+    resolveReturnUrl();
     const redirectUri = `${window.location.origin}/auth/mobile`;
     getExternalAuthUrl(redirectUri)
       .then((data) => {
