@@ -1,7 +1,7 @@
 import { GraphQLClient } from 'graphql-request';
 
 const getSaleorApiUrl = () => {
-  return process.env.NEXT_PUBLIC_SALEOR_API_URL || 'https://shamlh-backend.duckdns.org/graphql/';
+  return process.env.NEXT_PUBLIC_SALEOR_API_URL || 'https://api.shmlh.com/graphql/';
 };
 
 export const saleorClient = new GraphQLClient(getSaleorApiUrl(), {
