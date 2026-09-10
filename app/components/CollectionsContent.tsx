@@ -41,7 +41,7 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
                             </svg>
                         </div>
                         <h1 className="text-3xl md:text-4xl font-bold font-serif text-accent mb-4">{t.nav.collections}</h1>
-                        <p className="text-secondary text-base">
+                        <p className="text-gray-600 text-base">
                             {language === 'ar' ? 'لا توجد مجموعات متاحة حالياً' : 'No collections available at the moment'}
                         </p>
                     </div>
@@ -60,7 +60,7 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
                         </svg>
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold font-serif text-accent mb-4">{t.nav.collections}</h1>
-                    <p className="text-secondary text-base">
+                    <p className="text-gray-600 text-base">
                         {t.home.newCollectionSub}
                     </p>
                 </div>

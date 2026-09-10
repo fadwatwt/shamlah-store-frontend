@@ -33,7 +33,7 @@ export default function LanguagePage() {
                         </svg>
                     </div>
                     <h1 className="text-4xl font-bold font-serif text-[#671618] mb-2">اختر اللغة</h1>
-                    <p className="text-secondary opacity-60 font-english uppercase tracking-widest text-sm">
+                    <p className="text-gray-500 font-english uppercase tracking-widest text-sm">
                         Choose Your Preferred Language
                     </p>
                 </div>

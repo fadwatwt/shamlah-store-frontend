@@ -228,7 +228,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                         <h2 className="text-4xl font-serif text-accent mb-4">
                             {t.home.newCollection}
                         </h2>
-                        <p className="text-gray-500 text-sm font-light tracking-wide mb-10">
+                        <p className="text-gray-600 text-sm tracking-wide mb-10">
                             {t.home.newCollectionSub}
                         </p>
                     </div>
