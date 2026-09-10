@@ -471,10 +471,10 @@ export default function CheckoutPage() {
             {loading && <LoadingOverlay />}
             <Header />
 
-            <main className="pt-32 pb-20 px-4">
+            <main className="pt-20 md:pt-32 pb-12 md:pb-20 px-4">
                 <div className="max-w-[700px] mx-auto">
                     {/* Page Title */}
-                    <div className="text-center mb-12">
+                    <div className="text-center mb-6 md:mb-12">
                         <h1 className="text-[36px] md:text-[48px] font-serif text-accent mb-4">
                             {t.checkout.title}
                         </h1>
@@ -482,7 +482,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Progress Steps */}
-                    <div className="flex justify-center items-center gap-8 md:gap-16 mb-16">
+                    <div className="flex justify-center items-center gap-6 md:gap-8 lg:gap-16 mb-8 md:mb-16">
                         <div className="flex items-center gap-3">
                             <div className={`w-12 h-12 rounded-full ${step >= 1 ? 'bg-accent text-white shadow-xl shadow-accent/20' : 'border border-gray-200 text-gray-300'} flex items-center justify-center`}>
                                 <ShippingIcon className={`w-5 h-5 ${step >= 1 ? 'text-white' : 'text-gray-300'}`} />
@@ -501,7 +501,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {/* Order Summary Accordion */}
-                    <div className="mb-10 border border-gray-100 rounded-lg overflow-hidden bg-secondary">
+                    <div className="mb-6 md:mb-10 border border-gray-100 rounded-lg overflow-hidden bg-secondary">
                         <button
                             onClick={() => setIsOrderSummaryOpen(!isOrderSummaryOpen)}
                             className="w-full flex items-center justify-between p-5 hover:bg-secondary transition-colors"
@@ -570,7 +570,7 @@ export default function CheckoutPage() {
                     {step === 1 ? (
                         <>
                             {/* Shipping Form Header */}
-                            <div className="flex items-center gap-3 mb-8">
+                            <div className="flex items-center gap-3 mb-6 md:mb-8">
                                 <LocationIcon />
                                 <h2 className="text-[20px] font-semibold text-gray-800">{t.checkout.shippingInfo}</h2>
                             </div>
@@ -704,7 +704,7 @@ export default function CheckoutPage() {
                     ) : (
                         <div className="animate-in fade-in slide-in-from-right-4 duration-500">
                             {/* Shipping Method */}
-                            <div className="mb-12">
+                            <div className="mb-6 md:mb-12">
                                 <div className="flex items-center gap-3 mb-6">
                                     <ShippingIcon />
                                     <h2 className="text-[20px] font-semibold text-gray-800">{t.checkout.shippingCompany}</h2>

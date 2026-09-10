@@ -32,7 +32,7 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="min-h-screen pt-32 pb-20 bg-white" dir={dir}>
+        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 bg-white" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
                 <div className="flex flex-col lg:flex-row gap-8 lg:gap-20 items-center lg:items-stretch justify-center lg:justify-evenly">
 

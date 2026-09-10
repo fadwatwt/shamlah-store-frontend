@@ -109,10 +109,10 @@ export default function SuccessPage() {
         <div className="min-h-screen bg-white" dir={dir}>
             <Header />
 
-            <main className="pt-32 pb-20 px-4">
+            <main className="pt-20 md:pt-32 pb-12 md:pb-20 px-4">
                 <div className="max-w-[600px] mx-auto text-center">
                     {/* Success Icon */}
-                    <div className="mb-8 flex justify-center">
+                    <div className="mb-6 md:mb-8 flex justify-center">
                         <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 animate-bounce">
                             <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -123,12 +123,12 @@ export default function SuccessPage() {
                     <h1 className="text-[32px] md:text-[40px] font-serif text-accent mb-4">
                         {t.checkout.success.title}
                     </h1>
-                    <p className="text-gray-500 text-lg mb-12">
+                    <p className="text-gray-500 text-lg mb-6 md:mb-12">
                         {t.checkout.success.subtitle}
                     </p>
 
                     {/* Order Details Card */}
-                    <div className="bg-[#FBFBFB] border border-gray-100 rounded-2xl p-8 mb-12 text-start">
+                    <div className="bg-[#FBFBFB] border border-gray-100 rounded-2xl p-8 mb-6 md:mb-12 text-start">
                         <div className="space-y-6">
                             {processing ? (
                                 <div className="flex flex-col items-center py-8">

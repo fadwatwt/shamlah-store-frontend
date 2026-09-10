@@ -1,7 +1,7 @@
 const { GraphQLClient } = require('graphql-request');
 
 // Use the production Render URL
-const endpoint = 'https://shamlh-dashboard.duckdns.org/graphql/';
+const endpoint = 'https://api.shmlh.com/graphql/';
 
 const client = new GraphQLClient(endpoint, {
   headers: {

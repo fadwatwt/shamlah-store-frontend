@@ -102,7 +102,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
             </section>
 
             {/* Brand Mission Section */}
-            <section className="py-24 px-6 md:px-20 bg-white text-center">
+            <section className="py-12 md:py-24 px-6 md:px-20 bg-white text-center">
                 <div className="container mx-auto max-w-4xl">
                     <div className="flex justify-center mb-6">
                         <Image
@@ -123,9 +123,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
             </section>
 
             {/* Best Sellers Section */}
-            <section className="py-20 px-6 md:px-20 bg-white">
+            <section className="py-12 md:py-20 px-6 md:px-20 bg-white">
                 <div className="container mx-auto">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-8 md:mb-16">
                         <div className="flex justify-center mb-4">
                             <Image
                                 src="/image2.png"
@@ -161,9 +161,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
             </section>
 
             {/* Categories Section */}
-            <section className="py-20 px-6 md:px-20 bg-white">
+            <section className="py-12 md:py-20 px-6 md:px-20 bg-white">
                 <div className="container mx-auto">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-8 md:mb-16">
                         <div className="flex justify-center mb-4">
                             <Image
                                 src="/image2.png"
@@ -211,7 +211,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
             </section>
 
             {/* New Collection Section */}
-            <section className="py-24 px-6 md:px-20 text-center bg-white">
+            <section className="py-12 md:py-24 px-6 md:px-20 text-center bg-white">
                 <div className="container mx-auto">
                     {/* Decorative Pattern Icon */}
                     <div className="mb-6 flex justify-center">
@@ -224,7 +224,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                         />
                     </div>
 
-                    <div className="max-w-2xl mx-auto mb-16">
+                    <div className="max-w-2xl mx-auto mb-8 md:mb-16">
                         <h2 className="text-4xl font-serif text-accent mb-4">
                             {t.home.newCollection}
                         </h2>

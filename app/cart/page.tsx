@@ -18,7 +18,7 @@ export default function CartPage() {
 
     if (loading && items.length === 0) {
         return (
-            <main className="min-h-screen pt-32 pb-20 px-4 md:px-24" dir={dir}>
+            <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 px-4 md:px-24" dir={dir}>
                 <div className="container mx-auto px-6 lg:px-12 text-center">
                     <p className="text-xl">Loading cart...</p>
                 </div>
@@ -27,16 +27,16 @@ export default function CartPage() {
     }
 
     return (
-        <main className="min-h-screen pt-32 pb-20 px-4 md:px-24" dir={dir}>
+        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 px-4 md:px-24" dir={dir}>
             {loading && <LoadingOverlay />}
             <div className="container mx-auto px-6 lg:px-12">
                 {/* Page Title */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-8 md:mb-16">
                     <h1 className="text-4xl font-bold text-accent font-serif mb-4">{t.cart.title}</h1>
                     <div className="w-16 h-1 bg-accent/20 mx-auto rounded-full"></div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-12">
+                <div className="flex flex-col lg:flex-row gap-6 md:gap-12">
                     {/* Cart Items */}
                     <div className="lg:w-2/3 space-y-6">
                         {items.length > 0 ? (

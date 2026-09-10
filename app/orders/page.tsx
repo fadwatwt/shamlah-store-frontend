@@ -103,11 +103,11 @@ export default function OrdersPage() {
     }
 
     return (
-        <main className="min-h-screen pt-32 pb-20 bg-white md:px-24" dir={dir}>
+        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 bg-white md:px-24" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Header */}
-                <div className="text-center mb-12">
+                <div className="text-center mb-6 md:mb-12">
                     <h1 className="text-4xl font-bold text-accent font-serif mb-4">{t.orders.title}</h1>
                     <div className="w-16 h-1 bg-accent/20 mx-auto rounded-full"></div>
                 </div>
@@ -225,7 +225,7 @@ export default function OrdersPage() {
                 </div>
 
                 {/* Back Button */}
-                <div className="text-center mt-12">
+                <div className="text-center mt-6 md:mt-12">
                     <Link href="/profile" className="inline-block px-8 py-3 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900 smooth-transition font-medium">
                         {language === 'ar' ? 'العودة لحسابي' : 'Back to My Account'}
                     </Link>

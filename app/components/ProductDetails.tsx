@@ -393,7 +393,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     return (
         <>
-        <main className="min-h-screen pt-32 pb-20 bg-background" dir={dir}>
+        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 bg-background" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Upper Section: Breadcrumbs */}
@@ -552,7 +552,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         </div>
 
                         {/* Description */}
-                        <div className="mb-10 text-start">
+                        <div className="mb-6 md:mb-10 text-start">
                             <h3 className="font-bold text-gray-900 mb-3">{t.product.description}</h3>
                             <div className="text-gray-600 leading-relaxed text-sm">
                                 {renderDescription(displayDescription)}
@@ -560,7 +560,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         </div>
 
                         {/* Selectors */}
-                        <div className="space-y-6 mb-10 text-start">
+                        <div className="space-y-6 mb-6 md:mb-10 text-start">
 
                             {/* Dynamic Variant Selectors */}
                             {Array.from(variantAttributes.entries()).map(([attrName, values]) => {
@@ -679,7 +679,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="space-y-4 mb-12">
+                        <div className="space-y-4 mb-6 md:mb-12">
                             <button
                                 onClick={handleAddToCart}
                                 disabled={loadingCart}
@@ -794,7 +794,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                 {/* Related Products Section */}
                 {relatedProducts.length > 0 && (
                     <>
-                        <div className="flex flex-col items-center justify-center mb-16">
+                        <div className="flex flex-col items-center justify-center mb-8 md:mb-16">
                             <Image
                                 src="/image.png"
                                 alt="Decoration"

@@ -131,10 +131,10 @@ export default function CategoryContent({ category, initialProducts, channel, at
     );
 
     return (
-        <main className="pt-32 pb-24 px-6 min-h-screen" dir={dir}>
+        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={dir}>
             <div className="container mx-auto">
                 {/* Category Header */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-8 md:mb-16">
                     <div className="flex justify-center mb-4">
                         <Image src="/image2.png" alt="Separator" width={32} height={32} className="object-contain opacity-80" />
                     </div>
@@ -195,7 +195,7 @@ export default function CategoryContent({ category, initialProducts, channel, at
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-20 bg-gray-50 rounded-lg">
+                            <div className="text-center py-10 md:py-20 bg-gray-50 rounded-lg">
                                 <p className="text-gray-500 text-lg">
                                     {language === 'ar'
                                         ? 'لا توجد منتجات تطابق الفلتر المحدد'

@@ -69,7 +69,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <main className="min-h-screen pt-32 pb-20 md:px-24 bg-white" dir={dir}>
+        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 md:px-24 bg-white" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Header */}
@@ -79,7 +79,7 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Form Container */}
-                <div className="bg-[#F9F4F4] max-w-2xl mx-auto rounded-lg p-8 md:p-12 mb-16">
+                <div className="bg-[#F9F4F4] max-w-2xl mx-auto rounded-lg p-8 md:p-12 mb-8 md:mb-16">
                     <form className="space-y-6" onSubmit={handleRegister}>
                         {error && (
                             <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm text-center">

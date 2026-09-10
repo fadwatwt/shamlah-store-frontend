@@ -32,9 +32,9 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
 
     if (collections.length === 0) {
         return (
-            <main className="pt-32 pb-24 px-6 min-h-screen md:px-24" dir={dir}>
+            <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
                 <div className="container mx-auto">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-8 md:mb-16">
                         <div className="text-accent mb-4">
                             <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L14.4 7.2L20 8.4L16 12.6L16.8 18.4L12 16L7.2 18.4L8 12.6L4 8.4L9.6 7.2L12 2Z" />
@@ -51,9 +51,9 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
     }
 
     return (
-        <main className="pt-32 pb-24 px-6 min-h-screen md:px-24" dir={dir}>
+        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
             <div className="container mx-auto">
-                <div className="text-center mb-16">
+                <div className="text-center mb-8 md:mb-16">
                     <div className="text-accent mb-4">
                         <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2L14.4 7.2L20 8.4L16 12.6L16.8 18.4L12 16L7.2 18.4L8 12.6L4 8.4L9.6 7.2L12 2Z" />

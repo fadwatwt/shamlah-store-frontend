@@ -123,10 +123,10 @@ export default function ProductsPageContent({ initialProducts, attributeOptions 
     );
 
     return (
-        <main className="pt-32 pb-24 px-6 min-h-screen" dir={dir}>
+        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={dir}>
             <div className="container mx-auto">
                 {/* Header Section */}
-                <div className="text-center mb-16">
+                <div className="text-center mb-8 md:mb-16">
                     <div className="flex justify-center mb-4">
                         <Image
                             src="/image2.png"
@@ -198,7 +198,7 @@ export default function ProductsPageContent({ initialProducts, attributeOptions 
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-20 bg-gray-50 rounded-lg">
+                            <div className="text-center py-10 md:py-20 bg-gray-50 rounded-lg">
                                 <p className="text-gray-500 text-lg">
                                     {language === 'ar'
                                         ? 'جاري تحميل المنتجات...'

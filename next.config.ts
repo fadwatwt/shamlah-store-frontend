@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'shamlh-backend.duckdns.org',
+        hostname: 'api.shmlh.com',
         pathname: '/**',
       },
       {

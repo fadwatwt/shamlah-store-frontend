@@ -17,7 +17,7 @@ export default function StoryPage() {
 
 
     return (
-        <main className="pt-20 flex flex-col gap-16 md:gap-20">
+        <main className="pt-20 flex flex-col gap-8 md:gap-16 lg:gap-20">
             {/* Hero Section */}
             <section className="relative flex items-center h-[80vh] justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
@@ -43,10 +43,10 @@ export default function StoryPage() {
                 </div>
             </section>
 
-            <div className='px-20'>
+            <div className='px-4 md:px-10 lg:px-20'>
                 {/* Intro Section */}
-                <section className="py-20 md:py-24 container-custom">
-                    <div className="flex flex-col md:flex-row items-center gap-12 md:gap-16">
+                <section className="py-10 md:py-20 lg:py-24 container-custom">
+                    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12 lg:gap-16">
                         <div className="md:w-5/12 relative h-[450px] md:h-[550px] w-full">
                             <Image
                                 src="/c55a82c55d4a03a5e021e554af49768bda4fa39a.webp"
@@ -68,9 +68,9 @@ export default function StoryPage() {
                 </section>
 
                 {/* Values/Features - Updated Design */}
-                <section className="py-16 bg-white">
+                <section className="py-8 md:py-16 bg-white">
                     <div className="container-custom">
-                        <div className="text-center mb-16">
+                        <div className="text-center mb-8 md:mb-16">
                             <h2 className="text-3xl md:text-4xl font-serif text-accent">{t.storyPage.values.title}</h2>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 text-center max-w-5xl mx-auto">
@@ -117,8 +117,8 @@ export default function StoryPage() {
                 </section>
 
                 {/* Craft Section */}
-                <section className="py-20 md:py-24 px-6 container-custom">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-12 md:gap-16">
+                <section className="py-10 md:py-20 lg:py-24 px-6 container-custom">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 lg:gap-16">
                         <div className="md:w-5/12 text-start">
                             <h2 className="text-3xl md:text-4xl font-serif text-accent mb-8 leading-tight">
                                 {t.storyPage.craft.title}
@@ -140,7 +140,7 @@ export default function StoryPage() {
                 </section>
 
                 {/* Quote Section */}
-                <section className="py-24 px-6 text-center bg-white flex flex-col items-center">
+                <section className="py-12 md:py-24 px-6 text-center bg-white flex flex-col items-center">
                     <div className="mb-8">
                         <Image
                             src="/image2.png"
@@ -159,9 +159,9 @@ export default function StoryPage() {
                 </section>
 
                 {/* CTA */}
-                <section className="pb-32 pt-10 text-center bg-white">
+                <section className="pb-12 md:pb-32 pt-6 md:pt-10 text-center bg-white">
                     <div className="container mx-auto">
-                        <h2 className="text-3xl font-serif mb-10 text-accent">{t.storyPage.cta.title}</h2>
+                        <h2 className="text-3xl font-serif mb-6 md:mb-10 text-accent">{t.storyPage.cta.title}</h2>
                         <Link
                             href="/collections"
                             className="inline-block border-2 border-accent text-accent px-12 py-3 font-semibold smooth-transition hover:bg-accent hover:text-white"

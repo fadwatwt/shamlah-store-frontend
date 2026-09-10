@@ -41,7 +41,7 @@ export default function MainLayoutWrapper({ children }: { children: React.ReactN
   const isStoryPage = pathname === '/story' || pathname?.startsWith('/story/') || pathname === '/';
 
   return (
-    <div className={isStoryPage ? '' : 'px-16'}>
+    <div className={isStoryPage ? '' : 'px-4 md:px-8 lg:px-16'}>
       {isNavigating && <LoadingOverlay />}
       {children}
     </div>
