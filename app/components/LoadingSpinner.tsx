@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const LoadingSpinner = ({ size = 'md', color = 'accent' }: { size?: 'sm' | 'md' | 'lg', color?: string }) => {
   const sizeClasses = {
@@ -15,6 +16,9 @@ export const LoadingSpinner = ({ size = 'md', color = 'accent' }: { size?: 'sm' 
 };
 
 export const LoadingOverlay = () => {
+  const { language } = useLanguage();
+  const brandName = language === 'ar' ? 'شملة' : 'SHMLH';
+
   return (
     <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[9999] flex items-center justify-center animate-in fade-in duration-300">
       <div className="relative">
@@ -23,7 +27,7 @@ export const LoadingOverlay = () => {
         {/* Spinner */}
         <div className="relative flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
-          <p className="text-accent font-serif text-lg tracking-widest animate-pulse">SHMLH</p>
+          <p className={`text-accent font-serif tracking-widest animate-pulse ${language === 'ar' ? 'text-2xl' : 'text-lg'}`}>{brandName}</p>
         </div>
       </div>
     </div>

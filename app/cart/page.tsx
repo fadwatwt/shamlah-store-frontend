@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { LoadingOverlay } from '../components/LoadingSpinner';
-import { formatPrice, getCurrencyForChannel } from '@/lib/utils/formatPrice';
+import { formatPrice, getCurrencyForChannel, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
 
 export default function CartPage() {
     const { t, dir, language } = useLanguage();
@@ -14,7 +14,7 @@ export default function CartPage() {
     const displayShipping = shippingPrice?.amount || 0;
     const total = totalPrice?.amount || (subtotal?.amount || 0);
     const channelCurrency = subtotal?.currency || shippingPrice?.currency || getCurrencyForChannel();
-    const locale = language === 'ar' ? 'ar-EG' : 'en-US';
+    const locale = language === 'ar' ? AR_LATN_LOCALE : 'en-US';
 
     if (loading && items.length === 0) {
         return (

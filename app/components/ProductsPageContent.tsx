@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { SaleorAttribute } from '../../lib/types/saleor';
+import { Category, SaleorAttribute } from '../../lib/types/saleor';
+import { parsePriceParam } from '../../lib/utils/formatPrice';
 import ProductCard from './ProductCard';
 import FilterSidebar from './FilterSidebar';
 import Image from 'next/image';
@@ -17,6 +18,8 @@ interface Product {
     isBestSeller?: boolean;
     quantityAvailable?: number;
     isPreorder?: boolean;
+    categorySlug?: string | null;
+    categoryName?: string | null;
     attributes?: Array<{
         attribute: { name: string; slug?: string; translation?: { name?: string } | null };
         values: Array<{ name: string; slug?: string; translation?: { name?: string } | null }>;
@@ -26,6 +29,7 @@ interface Product {
 interface ProductsPageContentProps {
     initialProducts: Product[];
     attributeOptions?: SaleorAttribute[];
+    categories?: Category[];
 }
 
 type SortKey = 'default' | 'most_relevant' | 'best_selling' | 'name_asc' | 'name_desc' | 'price_desc' | 'price_asc' | 'date_asc' | 'date_desc';
@@ -33,10 +37,26 @@ type SortKey = 'default' | 'most_relevant' | 'best_selling' | 'name_asc' | 'name
 function filterProducts(products: Product[], searchParams: ReturnType<typeof useSearchParams>): Product[] {
     let result = [...products];
 
-    // Free-text search (matches name, case-insensitive)
+    // Category pre-filter (from the filter's Category step)
+    const categoryParam = searchParams.get('category')?.trim().toLowerCase();
+    if (categoryParam) {
+        result = result.filter(p => (p.categorySlug || '').toLowerCase() === categoryParam);
+    }
+
+    // Free-text search (matches name, category, and attribute names/values)
     const search = searchParams.get('search')?.trim().toLowerCase();
     if (search) {
-        result = result.filter(p => p.name.toLowerCase().includes(search));
+        result = result.filter(p =>
+            p.name.toLowerCase().includes(search) ||
+            (p.categoryName || '').toLowerCase().includes(search) ||
+            (p.attributes || []).some(g =>
+                (g.attribute.translation?.name || g.attribute.name).toLowerCase().includes(search) ||
+                g.values.some(v =>
+                    v.name.toLowerCase().includes(search) ||
+                    (v.translation?.name || '').toLowerCase().includes(search)
+                )
+            )
+        );
     }
 
     const stockStatuses = searchParams.getAll('stockStatus');
@@ -49,10 +69,10 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
         });
     }
 
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    if (minPrice) result = result.filter(p => p.price >= Number(minPrice));
-    if (maxPrice) result = result.filter(p => p.price <= Number(maxPrice));
+    const minPrice = parsePriceParam(searchParams.get('minPrice'));
+    const maxPrice = parsePriceParam(searchParams.get('maxPrice'));
+    if (minPrice !== null) result = result.filter(p => p.price >= minPrice);
+    if (maxPrice !== null) result = result.filter(p => p.price <= maxPrice);
 
     const attrParams = searchParams.getAll('attributes');
     if (attrParams.length > 0) {
@@ -111,7 +131,7 @@ const SORT_OPTIONS: { value: SortKey; label: string; labelAr: string }[] = [
     { value: 'date_desc',     label: 'Date, new to old',        labelAr: 'التاريخ، من الأحدث إلى الأقدم' },
 ];
 
-export default function ProductsPageContent({ initialProducts, attributeOptions }: ProductsPageContentProps) {
+export default function ProductsPageContent({ initialProducts, attributeOptions, categories }: ProductsPageContentProps) {
     const { dir, language } = useLanguage();
     const searchParams = useSearchParams();
     const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -120,6 +140,17 @@ export default function ProductsPageContent({ initialProducts, attributeOptions 
     const displayProducts = useMemo(
         () => sortProducts(filterProducts(initialProducts, searchParams), sortKey),
         [initialProducts, searchParams, sortKey]
+    );
+
+    const searchTerm = searchParams.get('search')?.trim() || '';
+    const hasActiveFilters = searchParams.toString() !== '';
+
+    const filterCategories = useMemo(
+        () => (categories || []).map(c => ({
+            slug: c.slug,
+            label: c.translation?.name || c.name,
+        })),
+        [categories]
     );
 
     return (
@@ -187,6 +218,7 @@ export default function ProductsPageContent({ initialProducts, attributeOptions 
                         setMobileFiltersOpen={setMobileFiltersOpen}
                         products={initialProducts}
                         attributeOptions={attributeOptions}
+                        categories={filterCategories}
                     />
 
                     {/* Product Grid */}
@@ -200,9 +232,13 @@ export default function ProductsPageContent({ initialProducts, attributeOptions 
                         ) : (
                             <div className="text-center py-10 md:py-20 bg-gray-50 rounded-lg">
                                 <p className="text-gray-500 text-lg">
-                                    {language === 'ar'
-                                        ? 'جاري تحميل المنتجات...'
-                                        : 'Loading products...'}
+                                    {hasActiveFilters
+                                        ? (language === 'ar'
+                                            ? `لا توجد نتائج مطابقة${searchTerm ? ` لـ "${searchTerm}"` : ''}`
+                                            : `No matching results${searchTerm ? ` for "${searchTerm}"` : ''}`)
+                                        : (language === 'ar'
+                                            ? 'جاري تحميل المنتجات...'
+                                            : 'Loading products...')}
                                 </p>
                             </div>
                         )}

@@ -13,22 +13,34 @@ const HERO_SLIDES = [
 
 export default function StoryPage() {
     const { t } = useLanguage();
-    // No more slider needed, using static layout
+    const [activeSlide, setActiveSlide] = useState(0);
+
+    // Auto-rotating hero slider (pauses on hover via CSS group? timer-based)
+    useEffect(() => {
+        if (HERO_SLIDES.length < 2) return;
+        const id = setInterval(() => {
+            setActiveSlide((s) => (s + 1) % HERO_SLIDES.length);
+        }, 5000);
+        return () => clearInterval(id);
+    }, []);
 
 
     return (
         <main className="pt-20 flex flex-col gap-8 md:gap-16 lg:gap-20">
-            {/* Hero Section */}
+            {/* Hero Section — multi-image slider */}
             <section className="relative flex items-center h-[80vh] justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">
-                    <Image
-                        src="/hero-embroidery.png"
-                        alt="Our Story Hero"
-                        fill
-                        className="object-cover"
-                        priority
-                        quality={100}
-                    />
+                    {HERO_SLIDES.map((src, i) => (
+                        <Image
+                            key={src}
+                            src={src}
+                            alt="Our Story Hero"
+                            fill
+                            className={`object-cover transition-opacity duration-1000 ${i === activeSlide ? 'opacity-100' : 'opacity-0'}`}
+                            priority={i === 0}
+                            quality={100}
+                        />
+                    ))}
                     <div className="absolute inset-0 bg-black/40"></div>
                 </div>
 
@@ -39,8 +51,20 @@ export default function StoryPage() {
                     <p className="text-lg md:text-xl font-light tracking-wider leading-relaxed">
                         {t.storyPage.hero.subtitle}
                     </p>
-                    <div className="w-[1px] h-12 bg-white/70 mt-12 mb-2"></div>
                 </div>
+                {/* Slider dots — bottom of hero */}
+                {HERO_SLIDES.length > 1 && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
+                        {HERO_SLIDES.map((src, i) => (
+                            <button
+                                key={src}
+                                onClick={() => setActiveSlide(i)}
+                                aria-label={`Slide ${i + 1}`}
+                                className={`h-1 rounded-full transition-all duration-300 ${i === activeSlide ? 'w-8 bg-white' : 'w-4 bg-white/40 hover:bg-white/70'}`}
+                            />
+                        ))}
+                    </div>
+                )}
             </section>
 
             <div className='px-4 md:px-10 lg:px-20'>
@@ -161,7 +185,10 @@ export default function StoryPage() {
                 {/* CTA */}
                 <section className="pb-12 md:pb-32 pt-6 md:pt-10 text-center bg-white">
                     <div className="container mx-auto">
-                        <h2 className="text-3xl font-serif mb-6 md:mb-10 text-accent">{t.storyPage.cta.title}</h2>
+                        <h2 className="text-3xl font-serif mb-6 text-accent">{t.storyPage.cta.title}</h2>
+                        <p className="text-gray-600 text-sm leading-relaxed max-w-xl mx-auto mb-8 md:mb-10">
+                            {t.storyPage.cta.text}
+                        </p>
                         <Link
                             href="/collections"
                             className="inline-block border-2 border-accent text-accent px-12 py-3 font-semibold smooth-transition hover:bg-accent hover:text-white"

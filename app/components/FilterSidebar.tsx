@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SaleorAttribute } from '../../lib/types/saleor';
 import { isColorAttribute } from '../../lib/utils/attributes';
+import { normalizeDigits } from '../../lib/utils/formatPrice';
 
 // Builds the attribute URL param value. The backend filter matches by value slug.
 function attributeParam(attributeSlug: string, valueSlug: string): string {
@@ -26,14 +27,22 @@ interface FilterProductAttribute {
 
 interface FilterProduct {
     attributes?: FilterProductAttribute[];
+    categorySlug?: string | null;
+}
+
+interface FilterCategory {
+    slug: string;
+    label: string;
 }
 
 interface FilterSidebarProps {
     mobileFiltersOpen: boolean;
     setMobileFiltersOpen: (open: boolean) => void;
-    categorySlug?: string;
     products?: FilterProduct[];
     attributeOptions?: SaleorAttribute[];
+    // When provided (general products page), a "Category" step shows FIRST and
+    // the attribute groups below narrow to the selected category's products.
+    categories?: FilterCategory[];
 }
 
 // A single filterable group derived from Saleor attributes
@@ -47,6 +56,9 @@ type LocalFilters = Record<string, string[]>;
 
 // Internal/system attributes that should not appear as user-facing filters
 // (color is presented as native swatches, notes/labels/best seller are metadata).
+// NOTE: the primary control is the Saleor Dashboard toggle
+// "Filterable in storefront" per attribute — this list is only a safety net
+// for system attributes that must never appear as filters.
 const EXCLUDED_ATTRIBUTE_SLUGS = new Set([
     'color',
     'colors',
@@ -91,17 +103,55 @@ function parseParams(params: ReturnType<typeof useSearchParams>): LocalFilters {
     return result;
 }
 
-export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, categorySlug, products, attributeOptions }: FilterSidebarProps) {
+export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen, products, attributeOptions, categories }: FilterSidebarProps) {
     const { language, t } = useLanguage();
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    // Category-first step (general products page): single-select via URL param.
+    const selectedCategory = searchParams.get('category') || '';
+    const hasCategoryStep = !!categories && categories.length > 0;
+
+    const selectCategory = useCallback((slug: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        // Switching category invalidates attribute selections from another category
+        params.delete('attributes');
+        if (slug) params.set('category', slug);
+        else params.delete('category');
+        const qs = params.toString();
+        router.push(qs ? `?${qs}` : window.location.pathname, { scroll: false });
+    }, [router, searchParams]);
+
+    // Products scoped to the selected category — attribute groups below are
+    // derived from this subset, so details follow the category choice.
+    const scopedProducts = useMemo(() => {
+        if (!products) return products;
+        if (!selectedCategory) return products;
+        const want = selectedCategory.toLowerCase();
+        return products.filter(p => (p.categorySlug || '').toLowerCase() === want);
+    }, [products, selectedCategory]);
+
+    // Category options with live product counts (only categories present on this page)
+    const categoryOptions = useMemo(() => {
+        if (!hasCategoryStep) return [];
+        const counts = new Map<string, number>();
+        for (const p of products || []) {
+            const slug = (p.categorySlug || '').toLowerCase();
+            if (!slug) continue;
+            counts.set(slug, (counts.get(slug) || 0) + 1);
+        }
+        return (categories || [])
+            .filter(c => (counts.get(c.slug.toLowerCase()) || 0) > 0)
+            .map(c => ({ slug: c.slug, label: c.label, count: counts.get(c.slug.toLowerCase()) || 0 }));
+    }, [categories, products, hasCategoryStep]);
+
     // Build filter groups dynamically from Saleor attribute definitions + products.
     // - Attribute definitions (attributeOptions) provide EVERY predefined value + translation.
     // - Products contribute any extra values (e.g. free-text attributes with no choices).
-    // Groups only include attributes actually used by the listed products.
+    // Groups only include attributes actually used by the listed (scoped) products.
     const groups: FilterGroup[] = useMemo(() => {
-        if (!products || products.length === 0) return [];
+        const source = scopedProducts;
+        if (!source || source.length === 0) return [];
 
         // Index Saleor attribute definitions by slug for full value lists
         const definitions = new Map<string, SaleorAttribute>();
@@ -112,9 +162,10 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         const attrGroups = new Map<string, { attributeSlug: string; label: string; values: Map<string, string> }>();
 
         // Seed groups + full value lists from Saleor definitions (only for attributes
-        // present on the listed products, so filters stay relevant to the category)
+        // present on the listed products, so filters stay relevant to the category).
+        // Attributes with the Dashboard toggle "Filterable in storefront" OFF are skipped.
         const usedSlugs = new Set<string>();
-        for (const product of products) {
+        for (const product of source) {
             for (const attr of product.attributes || []) {
                 if (isExcludedAttribute(attr)) continue;
                 if (attr.attribute.slug) usedSlugs.add(attr.attribute.slug);
@@ -123,6 +174,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         for (const slug of usedSlugs) {
             const def = definitions.get(slug);
             if (!def) continue;
+            if (def.filterableInStorefront === false) continue;
             const label = def.translation?.name || def.name;
             const values = new Map<string, string>();
             for (const choice of def.choices || []) {
@@ -134,12 +186,14 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         }
 
         // Merge in values found on products (covers values missing from definitions)
-        for (const product of products) {
+        for (const product of source) {
             if (!product.attributes) continue;
             for (const attr of product.attributes) {
                 if (isExcludedAttribute(attr)) continue;
                 const slug = attr.attribute.slug;
                 if (!slug) continue;
+                // Respect the Dashboard "Filterable in storefront" toggle
+                if (definitions.get(slug)?.filterableInStorefront === false) continue;
 
                 // Attribute group name — prefer Saleor translation, fallback to original name
                 const attrName = attr.attribute.translation?.name || attr.attribute.name;
@@ -171,14 +225,17 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             label: g.label,
             values: Array.from(g.values.entries()).map(([value, label]) => ({ value, label })),
         }));
-    }, [products, attributeOptions]);
+    }, [scopedProducts, attributeOptions]);
 
     const initialExpanded: Record<string, boolean> = {
+        category: true,
         availability: true,
         price: true,
     };
     groups.forEach((g, i) => {
-        initialExpanded[g.attributeSlug] = i < 2; // expand first two attribute groups by default
+        // Category-first mode: attribute details stay collapsed until the user
+        // picks a category; otherwise expand the first two groups by default.
+        initialExpanded[g.attributeSlug] = hasCategoryStep ? false : i < 2;
     });
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(initialExpanded);
 
@@ -192,12 +249,12 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paramsKey]);
 
-    const [priceMin, setPriceMin] = useState(searchParams.get('minPrice') || '');
-    const [priceMax, setPriceMax] = useState(searchParams.get('maxPrice') || '');
+    const [priceMin, setPriceMin] = useState(() => normalizeDigits(searchParams.get('minPrice') || ''));
+    const [priceMax, setPriceMax] = useState(() => normalizeDigits(searchParams.get('maxPrice') || ''));
 
     useEffect(() => {
-        setPriceMin(searchParams.get('minPrice') || '');
-        setPriceMax(searchParams.get('maxPrice') || '');
+        setPriceMin(normalizeDigits(searchParams.get('minPrice') || ''));
+        setPriceMax(normalizeDigits(searchParams.get('maxPrice') || ''));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [paramsKey]);
 
@@ -238,8 +295,8 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         Object.entries(localFilters).forEach(([key, values]) => {
             values.forEach(v => params.append(key, v));
         });
-        if (priceMin) params.set('minPrice', priceMin);
-        if (priceMax) params.set('maxPrice', priceMax);
+        if (priceMin) params.set('minPrice', normalizeDigits(priceMin));
+        if (priceMax) params.set('maxPrice', normalizeDigits(priceMax));
         router.push(`?${params.toString()}`, { scroll: false });
         setMobileFiltersOpen(false);
     }, [localFilters, priceMin, priceMax, router, setMobileFiltersOpen]);
@@ -276,6 +333,48 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                     </button>
                 </div>
 
+                {/* Category Step — first on the general products page.
+                    Picking a category narrows the attribute details below. */}
+                {hasCategoryStep && categoryOptions.length > 0 && (
+                    <div className="border-b border-gray-100 pb-6">
+                        <button onClick={() => toggleSection('category')} className="flex items-center justify-between w-full mb-4 group">
+                            <span className="font-semibold text-gray-800">{t.filters.category}</span>
+                            <svg className={`w-4 h-4 transition-transform ${expandedSections.category ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        {expandedSections.category !== false && (
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="radio"
+                                        name="filter-category"
+                                        checked={!selectedCategory}
+                                        onChange={() => selectCategory('')}
+                                        className="w-4 h-4 border-gray-300 text-accent focus:ring-accent"
+                                    />
+                                    <span className="text-gray-600 group-hover:text-accent transition-colors">
+                                        {t.filters.allCategories}
+                                    </span>
+                                </label>
+                                {categoryOptions.map((cat) => (
+                                    <label key={cat.slug} className="flex items-center gap-3 cursor-pointer group">
+                                        <input
+                                            type="radio"
+                                            name="filter-category"
+                                            checked={selectedCategory.toLowerCase() === cat.slug.toLowerCase()}
+                                            onChange={() => selectCategory(cat.slug)}
+                                            className="w-4 h-4 border-gray-300 text-accent focus:ring-accent"
+                                        />
+                                        <span className="text-gray-600 group-hover:text-accent transition-colors flex-1">
+                                            {cat.label}
+                                        </span>
+                                        <span className="text-xs text-gray-400">{cat.count}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Availability Filter */}
                 <div className="border-b border-gray-100 pb-6">
                     <button onClick={() => toggleSection('availability')} className="flex items-center justify-between w-full mb-4 group">
@@ -311,17 +410,25 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         <div className="flex items-center gap-4 mb-3">
                             <input
                                 type="number"
+                                inputMode="decimal"
+                                dir="ltr"
+                                min="0"
                                 placeholder={t.filters.minPrice}
                                 value={priceMin}
-                                onChange={(e) => setPriceMin(e.target.value)}
+                                onChange={(e) => setPriceMin(normalizeDigits(e.target.value))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyFilters(); } }}
                                 className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                             />
                             <span className="text-gray-400">-</span>
                             <input
                                 type="number"
+                                inputMode="decimal"
+                                dir="ltr"
+                                min="0"
                                 placeholder={t.filters.maxPrice}
                                 value={priceMax}
-                                onChange={(e) => setPriceMax(e.target.value)}
+                                onChange={(e) => setPriceMax(normalizeDigits(e.target.value))}
+                                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); applyFilters(); } }}
                                 className="w-full px-3 py-2 border border-gray-200 rounded text-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none"
                             />
                         </div>

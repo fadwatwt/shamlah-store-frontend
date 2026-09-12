@@ -122,6 +122,8 @@ export const translations = {
         filters: {
             title: 'الفلترة',
             close: 'إغلاق الفلترة',
+            category: 'الفئة',
+            allCategories: 'كل الفئات',
             availability: 'التوفر',
             inStock: 'متوفر الآن',
             outOfStock: 'نفد من المخزون',
@@ -278,6 +280,75 @@ export const translations = {
                     fridayTime: 'مغلق',
                 }
             }
+        },
+        infoPages: {
+            updated: 'آخر تحديث',
+            faq: {
+                title: 'الأسئلة الشائعة',
+                subtitle: 'إجابات عن أكثر ما يسأل عنه عملاؤنا',
+                contactTitle: 'لم تجد إجابتك؟',
+                contactText: 'فريقنا جاهز لمساعدتك في أي وقت',
+                contactButton: 'تواصل معنا',
+                items: [
+                    { q: 'كيف أطلب من متجر شملة؟', a: 'تصفح المنتجات وأضف ما يعجبك إلى السلة، ثم توجه إلى صفحة الدفع وأدخل بيانات الشحن واختر طريقة الدفع المناسبة. ستصلك رسالة تأكيد برقم الطلب فور إتمامه.' },
+                    { q: 'ما طرق الدفع المتوفرة؟', a: 'نقبل البطاقات الائتمانية (فيزا وماستركارد) وآبل باي. جميع عمليات الدفع مشفرة ومعالجة عبر بوابات دفع آمنة، ولا نخزن بيانات بطاقتك إطلاقاً.' },
+                    { q: 'كم تستغرق مدة الشحن؟', a: 'الشحن القياسي يستغرق 3-7 أيام عمل، والسريع 1-3 أيام عمل حسب وجهتك. الشحن مجاني للطلبات فوق 500 ريال. يمكنك تتبع طلبك من صفحة طلباتي.' },
+                    { q: 'هل تشحنون خارج فلسطين؟', a: 'نعم، نشحن لمعظم دول العالم. تُحسب رسوم الشحن الدولي ومدته أثناء إتمام الطلب حسب الدولة، وقد تطبق رسوم جمركية في بلد الوصول يتحملها المستلم.' },
+                    { q: 'ما سياسة الاستبدال والإرجاع؟', a: 'يمكنك طلب الاستبدال أو الإرجاع خلال 14 يوماً من الاستلام بشرط بقاء القطعة بحالتها الأصلية. التفاصيل الكاملة في صفحة سياسة الاستبدال والإرجاع.' },
+                    { q: 'هل القطع أصلية ومصنوعة يدوياً؟', a: 'نعم، كل قطعة في شملة مصنوعة يدوياً بحرفية فلسطينية أصيلة وتحمل تفاصيل التطريز التراثي. قد توجد اختلافات طفيفة بين القطع وهي ما يميز العمل اليدوي ويؤكد أصالته.' },
+                    { q: 'كيف أختار المقاس المناسب؟', a: 'كل منتج يعرض خيارات المقاس المتاحة. إن كنت بين مقاسين ننصح باختيار الأكبر للعبايات والقطع الفضفاضة، أو التواصل معنا لمساعدتك في الاختيار.' },
+                    { q: 'هل يمكن تغليف الطلب كهدية؟', a: 'نعم، جميع طلباتنا تصل بتغليف أنيق يليق بالهدايا. يمكنك إضافة ملاحظة الإهداء أثناء إتمام الطلب وسنرفقها مع طلبك.' },
+                    { q: 'كيف أتتبع طلبي؟', a: 'بعد شحن طلبك ستصلك رسالة برقم التتبع، ويمكنك متابعة حالته لحظة بلحظة من صفحة طلباتي في حسابك.' },
+                ],
+            },
+            privacy: {
+                title: 'سياسة الخصوصية',
+                subtitle: 'كيف نجمع بياناتك ونحميها',
+                sections: [
+                    { heading: 'من نحن', paragraphs: ['شملة علامة فلسطينية للأزياء الفاخرة المصنوعة يدوياً. خصوصيتك وثقتك أساس علاقتنا بك، وهذه السياسة توضح بشفافية البيانات التي نجمعها وكيفية استخدامها وحمايتها.'] },
+                    { heading: 'البيانات التي نجمعها', paragraphs: ['عند التسوق معنا نجمع الحد الأدنى الضروري لإتمام طلبك:'], list: ['بيانات التواصل: الاسم، البريد الإلكتروني، رقم الهاتف.', 'بيانات الشحن: العنوان، المدينة، الدولة، الرمز البريدي.', 'بيانات الطلب: المنتجات المشتراة وسجل الطلبات.', 'بيانات تقنية: نوع الجهاز والمتصفح لتحسين تجربة التصفح.'] },
+                    { heading: 'كيف نستخدم بياناتك', paragraphs: ['نستخدم بياناتك فقط لمعالجة طلباتك وشحنها، والتواصل معك بشأنها، وتحسين خدماتنا، وإرسال العروض — فقط إذا وافقت على استلامها. لا نبيع بياناتك لأي طرف ثالث إطلاقاً.'] },
+                    { heading: 'الدفع الآمن', paragraphs: ['تُعالج جميع المدفوعات عبر بوابات دفع معتمدة ومشفرة (SSL). لا نخزن أرقام بطاقاتك الائتمانية على خوادمنا، ولا يصلنا منها سوى تأكيد نجاح العملية.'] },
+                    { heading: 'ملفات تعريف الارتباط', paragraphs: ['نستخدم ملفات تعريف الارتباط الأساسية لتذكر لغتك وسلة تسوقك وتسجيل دخولك. يمكنك تعطيلها من إعدادات المتصفح، لكن بعض مزايا الموقع قد لا تعمل حينها.'] },
+                    { heading: 'حقوقك', paragraphs: ['يحق لك في أي وقت طلب الاطلاع على بياناتك أو تصحيحها أو حذفها، وإلغاء الاشتراك من رسائلنا التسويقية. تواصل معنا عبر صفحة اتصل بنا وسنرد خلال 48 ساعة عمل.'] },
+                    { heading: 'تواصل معنا', paragraphs: ['لأي استفسار حول الخصوصية: فلسطين، رام الله — الشارع الرئيسي، مبنى التراث.'] },
+                ],
+            },
+            terms: {
+                title: 'الشروط والأحكام',
+                subtitle: 'قواعد استخدام متجر شملة',
+                sections: [
+                    { heading: 'عام', paragraphs: ['باستخدامك متجر شملة وإتمام أي طلب، فأنت توافق على هذه الشروط. نحتفظ بحق تحديثها متى لزم، ويُعد استمرارك في الاستخدام موافقة على النسخة المحدثة.'] },
+                    { heading: 'المنتجات والأسعار', paragraphs: ['نبذل أقصى جهد لعرض منتجاتنا بدقة، لكن بطبيعة العمل اليدوي قد توجد اختلافات طفيفة في الألوان والتطريز وهي جزء من أصالة القطعة. جميع الأسعار تشمل الضرائب المطبقة في بلد البيع، وقد تتغير دون إشعار مسبق.'] },
+                    { heading: 'الطلبات والدفع', paragraphs: ['تأكيد الطلب يخضع لتوفر المخزون. نحتفظ بحق إلغاء أي طلب عند وجود خطأ في السعر أو البيانات مع استرداد كامل للمبلغ. الدفع مقدماً عبر البطاقات الائتمانية أو آبل باي من خلال بوابات دفع آمنة.'] },
+                    { heading: 'الشحن والتوصيل', paragraphs: ['تبدأ مدة التوصيل من تأكيد الطلب. التأخير الناتج عن شركات الشحن أو الجمارك أو الظروف القاهرة خارج مسؤوليتنا المباشرة، لكننا نتابع معك حتى الاستلام. التفاصيل في صفحة الشحن والتوصيل.'] },
+                    { heading: 'الاستبدال والإرجاع', paragraphs: ['تخضع عمليات الاستبدال والإرجاع واسترداد المبالغ للسياسة المنشورة في صفحة سياسة الاستبدال والإرجاع، وهي جزء لا يتجزأ من هذه الشروط.'] },
+                    { heading: 'الملكية الفكرية', paragraphs: ['جميع تصاميمنا وصورنا ونصوصنا وشعارنا ملك لعلامة شملة، ويُمنع نسخها أو استخدامها تجارياً دون إذن كتابي.'] },
+                    { heading: 'القانون المطبق', paragraphs: ['تخضع هذه الشروط لقوانين دولة فلسطين، وتُحل النزاعات ودياً أولاً عبر التواصل معنا، ثم أمام الجهات المختصة عند تعذر الحل الودي.'] },
+                ],
+            },
+            shipping: {
+                title: 'الشحن والتوصيل',
+                subtitle: 'خيارات الشحن والمدد والرسوم',
+                sections: [
+                    { heading: 'خيارات الشحن', paragraphs: ['نوفر ثلاثة خيارات لتناسب احتياجك:'], list: ['الشحن القياسي: 3-7 أيام عمل.', 'الشحن السريع: 1-3 أيام عمل.', 'شحن اليوم التالي: لعناوين محددة وتُعرض إتاحته أثناء الدفع.'] },
+                    { heading: 'رسوم الشحن', paragraphs: ['الشحن مجاني لجميع الطلبات فوق 500 ريال. ما دون ذلك تُحسب الرسوم حسب الوزن والوجهة وتظهر لك بوضوح قبل تأكيد الدفع — لا رسوم خفية أبداً.'] },
+                    { heading: 'الشحن الدولي', paragraphs: ['نشحن لمعظم دول العالم خلال 5-14 يوم عمل حسب الدولة. قد تُفرض رسوم جمركية أو ضرائب في بلد الوصول وهي مسؤولية المستلم. تأكد من صحة العنوان ورقم الهاتف لتفادي تأخير التسليم.'] },
+                    { heading: 'تتبع طلبك', paragraphs: ['فور شحن طلبك تصلك رسالة برقم التتبع، وتستطيع متابعته من صفحة طلباتي في حسابك. إن تأخر طلبك عن المدة المتوقعة تواصل معنا وسنتابعه لك مباشرة مع شركة الشحن.'] },
+                    { heading: 'تجهيز الطلبات', paragraphs: ['لأن قطعنا مصنوعة يدوياً، قد تحتاج بعض الطلبات 1-2 يوم عمل للتجهيز والفحص قبل الشحن — لنصلك بأفضل جودة تليق بك.'] },
+                ],
+            },
+            returns: {
+                title: 'سياسة الاستبدال والإرجاع',
+                subtitle: 'راحتك أولاً — استبدال واسترجاع بلا تعقيد',
+                sections: [
+                    { heading: 'المهلة والشروط', paragraphs: ['يمكنك طلب الاستبدال أو الإرجاع خلال 14 يوماً من تاريخ الاستلام، بشرط:'], list: ['بقاء القطعة بحالتها الأصلية دون استخدام أو غسل.', 'بقاء البطاقات والتغليف الأصلي مرفقة.', 'إرفاق رقم الطلب وصور توضح سبب الإرجاع عند وجود عيب.'] },
+                    { heading: 'حالات غير قابلة للإرجاع', paragraphs: ['حرصاً على الجودة والخصوصية لا يمكن إرجاع:'], list: ['القطع المخصصة أو المعدلة حسب طلبك.', 'الإكسسوارات الدقيقة المفتوحة لأسباب صحية.', 'القطع المشتراة في عروض التصفية النهائية (يُذكر ذلك في صفحة العرض).'] },
+                    { heading: 'كيف تطلب الاستبدال أو الإرجاع', paragraphs: ['راسلنا عبر صفحة اتصل بنا مع رقم طلبك، وسيرد عليك فريقنا خلال 48 ساعة عمل بتعليمات الشحن وعنوان الإرجاع. بعد وصول القطعة وفحصها نرسل البديل فوراً أو نبدأ الاسترداد.'] },
+                    { heading: 'استرداد المبلغ', paragraphs: ['يُرد المبلغ إلى وسيلة الدفع الأصلية خلال 5-14 يوم عمل من استلامنا القطعة المُرجعة. رسوم الشحن الأصلية غير مستردة إلا في حال العيب المصنعي أو الخطأ من طرفنا — وحينها نتحمل شحن الإرجاع كاملاً.'] },
+                    { heading: 'العيوب المصنعية', paragraphs: ['نقف خلف جودة عملنا اليدوي: أي عيب مصنعي يُعالج باستبدال فوري أو استرداد كامل بما فيه الشحن، دون التقيد بمهلة الـ 14 يوماً. فقط أرسل صوراً واضحة وسنتولى الباقي.'] },
+                ],
+            },
         },
         checkout: {
             title: 'إتمام الدفع',
@@ -454,6 +525,8 @@ export const translations = {
         filters: {
             title: 'Filters',
             close: 'Close filters',
+            category: 'Category',
+            allCategories: 'All categories',
             availability: 'Availability',
             inStock: 'In stock',
             outOfStock: 'Out of stock',
@@ -662,7 +735,76 @@ export const translations = {
                     fridayTime: 'Closed',
                 }
             }
-        }
+        },
+        infoPages: {
+            updated: 'Last updated',
+            faq: {
+                title: 'Frequently Asked Questions',
+                subtitle: 'Answers to what our customers ask most',
+                contactTitle: "Didn't find your answer?",
+                contactText: 'Our team is ready to help anytime',
+                contactButton: 'Contact Us',
+                items: [
+                    { q: 'How do I order from SHMLH?', a: 'Browse the products, add what you love to the cart, then head to checkout, enter your shipping details and choose a payment method. You will receive a confirmation message with your order number right away.' },
+                    { q: 'What payment methods are available?', a: 'We accept credit cards (Visa and Mastercard) and Apple Pay. All payments are encrypted and processed through secure gateways — we never store your card details.' },
+                    { q: 'How long does shipping take?', a: 'Standard shipping takes 3-7 business days, express 1-3 business days depending on your destination. Shipping is free for orders over 500 SAR. You can track your order from the My Orders page.' },
+                    { q: 'Do you ship outside Palestine?', a: 'Yes, we ship to most countries worldwide. International fees and times are calculated at checkout by country; customs duties in the destination country, if any, are the recipient\'s responsibility.' },
+                    { q: 'What is the exchange and return policy?', a: 'You can request an exchange or return within 14 days of delivery, provided the piece is in its original condition. Full details are on the Exchange & Returns page.' },
+                    { q: 'Are the pieces authentic and handmade?', a: 'Yes — every SHMLH piece is handmade by Palestinian artisans and carries heritage embroidery details. Slight variations between pieces are the signature of handwork and proof of authenticity.' },
+                    { q: 'How do I choose the right size?', a: 'Each product lists its available sizes. If you are between sizes, we recommend the larger one for abayas and loose cuts — or contact us and we will help you choose.' },
+                    { q: 'Can my order be gift-wrapped?', a: 'Yes, all our orders arrive in elegant gift-worthy packaging. Add your dedication note at checkout and we will include it with your order.' },
+                    { q: 'How do I track my order?', a: 'Once your order ships you will receive a message with the tracking number, and you can follow it step by step from the My Orders page in your account.' },
+                ],
+            },
+            privacy: {
+                title: 'Privacy Policy',
+                subtitle: 'How we collect and protect your data',
+                sections: [
+                    { heading: 'Who we are', paragraphs: ['SHMLH is a Palestinian luxury fashion brand crafting handmade pieces. Your privacy and trust are the foundation of our relationship — this policy transparently explains what we collect and how we use and protect it.'] },
+                    { heading: 'Data we collect', paragraphs: ['When you shop with us we collect only the minimum needed to fulfil your order:'], list: ['Contact details: name, email, phone number.', 'Shipping details: address, city, country, postal code.', 'Order data: purchased products and order history.', 'Technical data: device and browser type to improve browsing.'] },
+                    { heading: 'How we use your data', paragraphs: ['We use your data only to process and ship your orders, communicate with you about them, improve our services, and send offers — only if you agree to receive them. We never sell your data to any third party.'] },
+                    { heading: 'Secure payment', paragraphs: ['All payments are processed through certified, encrypted (SSL) payment gateways. We do not store your credit card numbers on our servers — we only receive confirmation that the transaction succeeded.'] },
+                    { heading: 'Cookies', paragraphs: ['We use essential cookies to remember your language, cart, and login. You can disable them in your browser settings, though some site features may stop working.'] },
+                    { heading: 'Your rights', paragraphs: ['At any time you may request to view, correct, or delete your data, and unsubscribe from our marketing messages. Contact us through the Contact page and we will reply within 48 business hours.'] },
+                    { heading: 'Contact us', paragraphs: ['For any privacy question: Palestine, Ramallah — Main Street, Heritage Building.'] },
+                ],
+            },
+            terms: {
+                title: 'Terms & Conditions',
+                subtitle: 'Rules for using the SHMLH store',
+                sections: [
+                    { heading: 'General', paragraphs: ['By using the SHMLH store and placing any order, you agree to these terms. We may update them when needed, and your continued use counts as acceptance of the updated version.'] },
+                    { heading: 'Products and prices', paragraphs: ['We do our utmost to present our products accurately, but given their handmade nature slight variations in colors and embroidery may exist — part of each piece\'s authenticity. All prices include applicable taxes in the country of sale and may change without prior notice.'] },
+                    { heading: 'Orders and payment', paragraphs: ['Order confirmation is subject to stock availability. We may cancel any order in case of pricing or data errors with a full refund. Payment is upfront via credit cards or Apple Pay through secure gateways.'] },
+                    { heading: 'Shipping and delivery', paragraphs: ['Delivery times start from order confirmation. Delays caused by carriers, customs, or force majeure are outside our direct responsibility, but we follow up with you until delivery. See the Shipping page for details.'] },
+                    { heading: 'Exchanges and returns', paragraphs: ['Exchanges, returns, and refunds are governed by the policy published on the Exchange & Returns page, which forms an integral part of these terms.'] },
+                    { heading: 'Intellectual property', paragraphs: ['All our designs, photos, texts, and logo belong to SHMLH — copying or commercial use without written permission is prohibited.'] },
+                    { heading: 'Governing law', paragraphs: ['These terms are governed by the laws of the State of Palestine. Disputes are first resolved amicably through contacting us, then before the competent authorities if needed.'] },
+                ],
+            },
+            shipping: {
+                title: 'Shipping & Delivery',
+                subtitle: 'Options, times, and fees',
+                sections: [
+                    { heading: 'Shipping options', paragraphs: ['We offer three options to suit your need:'], list: ['Standard shipping: 3-7 business days.', 'Express shipping: 1-3 business days.', 'Next-day shipping: for select addresses, availability shown at checkout.'] },
+                    { heading: 'Shipping fees', paragraphs: ['Shipping is free on all orders over 500 SAR. Below that, fees are calculated by weight and destination and shown clearly before payment confirmation — never any hidden fees.'] },
+                    { heading: 'International shipping', paragraphs: ['We ship to most countries within 5-14 business days depending on the country. Customs duties or taxes in the destination country, if any, are the recipient\'s responsibility. Please double-check your address and phone to avoid delivery delays.'] },
+                    { heading: 'Track your order', paragraphs: ['As soon as your order ships you receive a message with the tracking number, and you can follow it from the My Orders page. If your order passes its expected time, contact us and we will chase it with the carrier for you.'] },
+                    { heading: 'Preparing orders', paragraphs: ['Because our pieces are handmade, some orders need 1-2 business days of preparation and inspection before shipping — so they reach you in the finest quality you deserve.'] },
+                ],
+            },
+            returns: {
+                title: 'Exchange & Return Policy',
+                subtitle: 'Your comfort first — hassle-free exchange and returns',
+                sections: [
+                    { heading: 'Timeframe and conditions', paragraphs: ['You may request an exchange or return within 14 days of delivery, provided:'], list: ['The piece is unworn, unwashed, and in its original condition.', 'Tags and original packaging are intact.', 'You include the order number, plus photos showing the reason when there is a defect.'] },
+                    { heading: 'Non-returnable cases', paragraphs: ['To protect quality and hygiene, the following cannot be returned:'], list: ['Customized pieces made to your request.', 'Delicate opened accessories, for hygiene reasons.', 'Final-clearance pieces (stated on the offer page).'] },
+                    { heading: 'How to request', paragraphs: ['Message us through the Contact page with your order number, and our team will reply within 48 business hours with shipping instructions and the return address. Once the piece arrives and passes inspection, we send the replacement immediately or start the refund.'] },
+                    { heading: 'Refunds', paragraphs: ['Refunds go to the original payment method within 5-14 business days of receiving the returned piece. Original shipping fees are non-refundable except for manufacturing defects or our own mistakes — in which case we fully cover return shipping.'] },
+                    { heading: 'Manufacturing defects', paragraphs: ['We stand behind our handwork: any manufacturing defect is handled with an instant replacement or a full refund including shipping, without the 14-day limit. Just send clear photos and we will take care of the rest.'] },
+                ],
+            },
+        },
     },
 };
 

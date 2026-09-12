@@ -12,6 +12,8 @@ export const GET_ATTRIBUTES = (languageCode: string) => `
           id
           name
           slug
+          filterableInStorefront
+          visibleInStorefront
           translation(languageCode: ${languageCode}) {
             name
           }
@@ -47,6 +49,8 @@ export const getAttributes = cache(async function (
       id: edge.node.id,
       name: edge.node.name,
       slug: edge.node.slug,
+      filterableInStorefront: edge.node.filterableInStorefront,
+      visibleInStorefront: edge.node.visibleInStorefront,
       translation: edge.node.translation,
       choices: (edge.node.choices?.edges || []).map(e => e.node),
     }));

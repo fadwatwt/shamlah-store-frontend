@@ -154,7 +154,7 @@ export default function SuccessPage() {
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-100 pb-4">
                                         <span className="text-gray-500 text-sm font-medium">{t.checkout.success.orderDate}</span>
-                                        <span className="text-gray-900 font-medium" suppressHydrationWarning>{new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className="text-gray-900 font-medium" suppressHydrationWarning>{new Date().toLocaleDateString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                     </div>
                                     <div className="flex justify-between items-center pb-2">
                                         <span className="text-gray-500 text-sm font-medium">{t.checkout.success.paymentMethod}</span>

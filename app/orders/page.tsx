@@ -29,7 +29,7 @@ export default function OrdersPage() {
             const mapped = nodes.map((o: any) => ({
                 id: o.number || o.id.slice(-8),
                 rawId: o.id,
-                date: new Date(o.created).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+                date: new Date(o.created).toLocaleDateString(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 total: o.total?.gross?.amount ?? 0,
                 currency: o.total?.gross?.currency ?? 'USD',
                 status: mapSaleorStatus(o.status),

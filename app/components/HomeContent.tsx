@@ -86,19 +86,16 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                     <p className="text-lg md:text-xl font-light tracking-wider">
                         {t.home.heroSubtitle}
                     </p>
-                    <Link
-                        href="/collections"
-                        className="mt-8 inline-block border border-white/80 text-white px-8 py-2.5 text-sm tracking-widest uppercase hover:bg-white hover:text-black smooth-transition"
-                    >
-                        {t.home.explore}
-                    </Link>
                 </div>
 
-                {/* Scroll Indicator */}
-                <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-                    <div className="w-[1px] h-12 bg-white/70 mb-2"></div>
-                    <span className="text-white/80 text-xs tracking-widest uppercase">{t.home.scroll}</span>
-                </div>
+                {/* Explore Indicator — vertical line with Explore link underneath */}
+                <Link
+                    href="/products"
+                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center group cursor-pointer z-20"
+                >
+                    <div className="w-[1px] h-16 bg-white/70 mb-3 group-hover:bg-white smooth-transition"></div>
+                    <span className="text-white/80 text-xs tracking-widest group-hover:text-white smooth-transition">{t.home.explore}</span>
+                </Link>
             </section>
 
             {/* Brand Mission Section */}

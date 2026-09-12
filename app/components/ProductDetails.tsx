@@ -401,7 +401,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     <div className="flex items-center gap-2">
                         <Link href="/" className="hover:text-accent smooth-transition">{t.product.breadcrumb.home}</Link>
                         <svg className={`w-3 h-3 text-gray-400 ${language === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        <Link href="/products" className="hover:text-accent smooth-transition">{t.product.breadcrumb.store}</Link>
+                        {product.category?.slug ? (
+                            <Link href={`/category/${product.category.slug}`} className="hover:text-accent smooth-transition">
+                                {product.category?.translation?.name || product.category?.name}
+                            </Link>
+                        ) : (
+                            <Link href="/products" className="hover:text-accent smooth-transition">{t.product.breadcrumb.store}</Link>
+                        )}
                         <svg className={`w-3 h-3 text-gray-400 ${language === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         <span className="text-accent">{displayName}</span>
                     </div>

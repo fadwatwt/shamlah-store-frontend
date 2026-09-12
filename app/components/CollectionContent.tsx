@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import ProductCard from './ProductCard';
 import { Collection } from '../../lib/types/saleor';
+import { parsePriceParam } from '../../lib/utils/formatPrice';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
@@ -46,11 +47,11 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
         });
     }
 
-    // Price range
-    const minPrice = searchParams.get('minPrice');
-    const maxPrice = searchParams.get('maxPrice');
-    if (minPrice) result = result.filter(p => p.price >= Number(minPrice));
-    if (maxPrice) result = result.filter(p => p.price <= Number(maxPrice));
+    // Price range (Arabic-Indic digits safe)
+    const minPrice = parsePriceParam(searchParams.get('minPrice'));
+    const maxPrice = parsePriceParam(searchParams.get('maxPrice'));
+    if (minPrice !== null) result = result.filter(p => p.price >= minPrice);
+    if (maxPrice !== null) result = result.filter(p => p.price <= maxPrice);
 
     // Attributes — format: attribute:slug:value
     const attrParams = searchParams.getAll('attributes');

@@ -53,7 +53,7 @@ export default function ProfilePage() {
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en-US', {
+        return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG-u-nu-latn' : 'en-US', {
             year: 'numeric',
             month: 'long',
         }).format(date);

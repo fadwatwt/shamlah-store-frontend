@@ -91,12 +91,12 @@ export default function Header() {
         </Link>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden md:flex items-center gap-12">
           {navLinks.map((link) => (
             <div key={link.href} className="relative group/dropdown">
               <Link
                 href={link.href}
-                className="text-base font-medium smooth-transition hover:text-accent relative group text-gray-800 flex items-center gap-1"
+                className="text-base font-semibold smooth-transition hover:text-accent relative group text-gray-800 flex items-center gap-1"
               >
                 {link.label}
                 {link.children && (
@@ -128,7 +128,7 @@ export default function Header() {
         </nav>
 
         {/* Action Icons */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {/* Search Button */}
           <button
             type="button"

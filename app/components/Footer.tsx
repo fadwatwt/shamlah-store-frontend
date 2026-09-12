@@ -1,11 +1,38 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function Footer() {
     const { language, setLanguage, t } = useLanguage();
+    const [langOpen, setLangOpen] = useState(false);
+    const langRef = useRef<HTMLDivElement>(null);
+
+    // Close the language menu on outside tap/click or Escape (touch-friendly)
+    useEffect(() => {
+        if (!langOpen) return;
+        const onDown = (e: MouseEvent | TouchEvent) => {
+            if (langRef.current && !langRef.current.contains(e.target as Node)) {
+                setLangOpen(false);
+            }
+        };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLangOpen(false); };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('touchstart', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('touchstart', onDown);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [langOpen]);
+
+    const pickLanguage = (lang: 'ar' | 'en') => {
+        setLanguage(lang);
+        setLangOpen(false);
+    };
 
     const sections = [
         {
@@ -90,7 +117,7 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-gray-600 text-xs text-center md:text-start">
+                    <p className="text-gray-600 text-xs text-center md:text-start" suppressHydrationWarning>
                         &copy; {new Date().getFullYear()} SHMLH. {t.footer.rights}
                     </p>
 
@@ -100,30 +127,38 @@ export default function Footer() {
                             <Link href="/terms" className="text-gray-600 hover:text-accent text-[11px] font-medium">{t.footer.links_label.terms}</Link>
                         </div>
 
-                        {/* Language Dropdown */}
-                        <div className="relative group">
-                            <button className="flex items-center gap-2 text-gray-500 hover:text-gray-800 smooth-transition text-[11px] font-medium py-2">
+                        {/* Language Dropdown — tap/click to open (works on touch screens) */}
+                        <div className="relative group" ref={langRef}>
+                            <button
+                                type="button"
+                                onClick={() => setLangOpen((o) => !o)}
+                                aria-haspopup="menu"
+                                aria-expanded={langOpen}
+                                className="flex items-center gap-2 text-gray-500 hover:text-gray-800 smooth-transition text-[11px] font-medium py-2"
+                            >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2.001 2.001 0 004.516-1.068C17.447 4.252 12.959 2 8 2c-1.31 0-2.573.235-3.745.666a2.01 2.01 0 011.025 1.269z" />
                                 </svg>
                                 <span>{language === 'ar' ? 'العربية' : 'English'}</span>
-                                <svg className="w-3 h-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className={`w-3 h-3 text-gray-400 transition-transform ${langOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                                 </svg>
                             </button>
 
                             {/* Dropdown Menu */}
-                            <div className="absolute bottom-full end-0 pb-2 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible translate-y-2 group-hover:translate-y-0 smooth-transition">
-                                <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[150px] overflow-hidden">
+                            <div className={`absolute bottom-full end-0 pb-2 z-50 transition-all duration-200 ${langOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'} group-hover:opacity-100 group-hover:visible group-hover:translate-y-0`}>
+                                <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[150px] overflow-hidden" role="menu">
                                     <button
-                                        onClick={() => setLanguage('en')}
+                                        type="button"
+                                        onClick={() => pickLanguage('en')}
                                         className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'en' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
                                     >
                                         <span className="text-xs text-gray-400 w-4">US</span>
                                         <span>English</span>
                                     </button>
                                     <button
-                                        onClick={() => setLanguage('ar')}
+                                        type="button"
+                                        onClick={() => pickLanguage('ar')}
                                         className={`w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 smooth-transition ${language === 'ar' ? 'text-accent bg-gray-50/50' : 'text-gray-600'}`}
                                     >
                                         <span className="text-xs text-gray-400 w-4">PS</span>

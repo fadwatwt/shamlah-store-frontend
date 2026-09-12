@@ -8,7 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { ProductVariant } from '../../lib/types/saleor';
-import { formatPrice, getCurrencyForChannel } from '@/lib/utils/formatPrice';
+import { formatPrice, getCurrencyForChannel, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
 import { extractHexColors, isHandmadeProduct } from '@/lib/utils/attributes';
 
 export interface ProductCardProps {
@@ -238,7 +238,7 @@ export default function ProductCard({
                     {/* Price */}
                     <p className="text-xl text-center font-semibold text-accent mb-3">
                         {language === 'ar'
-                            ? `${Math.round(price).toLocaleString('ar-EG')} ${t.common.currency}`
+                            ? `${Math.round(price).toLocaleString(AR_LATN_LOCALE)} ${t.common.currency}`
                             : formatPrice(price, currency || getCurrencyForChannel(), 'en-US')}
                     </p>
 

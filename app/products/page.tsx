@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { getProducts } from '@/lib/queries/products';
 import { getAttributes } from '@/lib/queries/attributes';
-import { Product, SaleorAttribute } from '@/lib/types/saleor';
+import { getCategories } from '@/lib/queries/categories';
+import { Product, Category, SaleorAttribute } from '@/lib/types/saleor';
 import ProductsPageContent from '../components/ProductsPageContent';
 
 function transformSaleorProduct(product: Product) {
@@ -32,25 +33,30 @@ function transformSaleorProduct(product: Product) {
         isBestSeller,
         quantityAvailable,
         isPreorder,
-        attributes: product.attributes
+        attributes: product.attributes,
+        categorySlug: product.category?.slug || null,
+        categoryName: product.category?.translation?.name || product.category?.name || null,
     };
 }
 
 export default async function ProductsPage() {
     let products = [];
     let attributeOptions: SaleorAttribute[] = [];
+    let categories: Category[] = [];
 
     const cookieStore = await cookies();
     const language = cookieStore.get('language')?.value || 'en';
     const languageCode = language === 'ar' ? 'AR' : 'EN';
 
     try {
-        const [saleorProducts, attrs] = await Promise.all([
+        const [saleorProducts, attrs, cats] = await Promise.all([
             getProducts(100, 'default-channel', languageCode as 'AR' | 'EN'),
             getAttributes(languageCode as 'AR' | 'EN'),
+            getCategories(languageCode as 'AR' | 'EN'),
         ]);
         products = saleorProducts.map(transformSaleorProduct);
         attributeOptions = attrs;
+        categories = cats;
         console.log("BEST SELLERS DETECTED IN PRODUCTS PAGE:", products.filter(p => p.isBestSeller).map(p => p.name));
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -103,7 +109,7 @@ export default async function ProductsPage() {
 
     return (
         <Suspense fallback={<div className="min-h-screen pt-20 md:pt-32 text-center text-gray-500">Loading products...</div>}>
-            <ProductsPageContent initialProducts={products} attributeOptions={attributeOptions} />
+            <ProductsPageContent initialProducts={products} attributeOptions={attributeOptions} categories={categories} />
         </Suspense>
     );
 }

@@ -69,6 +69,14 @@ export const GET_PRODUCTS = `
               }
             }
           }
+          category {
+            id
+            name
+            slug
+            translation(languageCode: $languageCode) {
+              name
+            }
+          }
         }
       }
       pageInfo {
@@ -284,6 +292,10 @@ export const GET_PRODUCT_BY_ID = (languageCode: string) => `
       category {
         id
         name
+        slug
+        translation(languageCode: ${languageCode}) {
+          name
+        }
       }
     }
   }
@@ -480,6 +492,14 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
               translation(languageCode: $languageCode) {
                 name
               }
+            }
+          }
+          category {
+            id
+            name
+            slug
+            translation(languageCode: $languageCode) {
+              name
             }
           }
         }

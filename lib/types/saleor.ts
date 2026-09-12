@@ -92,6 +92,7 @@ export interface Product {
     name?: string;
     description?: string;
   };
+  category?: Category | null;
 }
 
 export interface ProductsResponse {
@@ -220,6 +221,8 @@ export interface SaleorAttribute {
   id: string;
   name: string;
   slug: string;
+  filterableInStorefront?: boolean;
+  visibleInStorefront?: boolean;
   translation?: {
     name?: string;
   } | null;
@@ -233,6 +236,8 @@ export interface AttributesResponse {
         id: string;
         name: string;
         slug: string;
+        filterableInStorefront?: boolean;
+        visibleInStorefront?: boolean;
         translation?: {
           name?: string;
         } | null;
