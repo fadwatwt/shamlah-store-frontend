@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import Header from "./components/Header";
+import LocaleBar from "./components/LocaleBar";
 import Footer from "./components/Footer";
 import MainLayoutWrapper from "./components/MainLayoutWrapper";
 import WhatsAppFloat from "./components/WhatsAppFloat";
@@ -56,6 +57,7 @@ export default async function RootLayout({
               <AuthProvider>
                 <CartProvider>
                   <div className="bg-background">
+                    <LocaleBar />
                     <Header />
                     <MainLayoutWrapper>
                       {children}

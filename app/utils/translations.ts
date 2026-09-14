@@ -35,7 +35,7 @@ export const translations = {
             }
         },
         header: {
-            freeShipping: 'شحن مجاني للطلبات فوق 500 ريال',
+            freeShipping: 'شحن لجميع الوجهات — تُحسب الرسوم عند الدفع',
             searchPlaceholder: 'ابحث عن منتجات...',
             searchTitle: 'البحث في الموقع',
             searchSubtitle: 'ابحث عن الحقائب، الملابس، الإكسسوارات والمزيد...',
@@ -292,7 +292,7 @@ export const translations = {
                 items: [
                     { q: 'كيف أطلب من متجر شملة؟', a: 'تصفح المنتجات وأضف ما يعجبك إلى السلة، ثم توجه إلى صفحة الدفع وأدخل بيانات الشحن واختر طريقة الدفع المناسبة. ستصلك رسالة تأكيد برقم الطلب فور إتمامه.' },
                     { q: 'ما طرق الدفع المتوفرة؟', a: 'نقبل البطاقات الائتمانية (فيزا وماستركارد) وآبل باي. جميع عمليات الدفع مشفرة ومعالجة عبر بوابات دفع آمنة، ولا نخزن بيانات بطاقتك إطلاقاً.' },
-                    { q: 'كم تستغرق مدة الشحن؟', a: 'الشحن القياسي يستغرق 3-7 أيام عمل، والسريع 1-3 أيام عمل حسب وجهتك. الشحن مجاني للطلبات فوق 500 ريال. يمكنك تتبع طلبك من صفحة طلباتي.' },
+                    { q: 'كم تستغرق مدة الشحن؟', a: 'الشحن القياسي يستغرق 3-7 أيام عمل حسب وجهتك، ورسومه 12 دولاراً أمريكياً أو 10 يورو أو 40 ليرة تركية حسب عملتك. يمكنك تتبع طلبك من صفحة طلباتي.' },
                     { q: 'هل تشحنون خارج فلسطين؟', a: 'نعم، نشحن لمعظم دول العالم. تُحسب رسوم الشحن الدولي ومدته أثناء إتمام الطلب حسب الدولة، وقد تطبق رسوم جمركية في بلد الوصول يتحملها المستلم.' },
                     { q: 'ما سياسة الاستبدال والإرجاع؟', a: 'يمكنك طلب الاستبدال أو الإرجاع خلال 14 يوماً من الاستلام بشرط بقاء القطعة بحالتها الأصلية. التفاصيل الكاملة في صفحة سياسة الاستبدال والإرجاع.' },
                     { q: 'هل القطع أصلية ومصنوعة يدوياً؟', a: 'نعم، كل قطعة في شملة مصنوعة يدوياً بحرفية فلسطينية أصيلة وتحمل تفاصيل التطريز التراثي. قد توجد اختلافات طفيفة بين القطع وهي ما يميز العمل اليدوي ويؤكد أصالته.' },
@@ -331,8 +331,8 @@ export const translations = {
                 title: 'الشحن والتوصيل',
                 subtitle: 'خيارات الشحن والمدد والرسوم',
                 sections: [
-                    { heading: 'خيارات الشحن', paragraphs: ['نوفر ثلاثة خيارات لتناسب احتياجك:'], list: ['الشحن القياسي: 3-7 أيام عمل.', 'الشحن السريع: 1-3 أيام عمل.', 'شحن اليوم التالي: لعناوين محددة وتُعرض إتاحته أثناء الدفع.'] },
-                    { heading: 'رسوم الشحن', paragraphs: ['الشحن مجاني لجميع الطلبات فوق 500 ريال. ما دون ذلك تُحسب الرسوم حسب الوزن والوجهة وتظهر لك بوضوح قبل تأكيد الدفع — لا رسوم خفية أبداً.'] },
+                    { heading: 'خيارات الشحن', paragraphs: ['نوفر الشحن القياسي لجميع الوجهات المدعومة خلال 3-7 أيام عمل حسب الدولة، وتظهر طريقة الشحن المتاحة وسعرها أثناء إتمام الطلب.'] },
+                    { heading: 'رسوم الشحن', paragraphs: ['رسوم الشحن حسب وجهتك وعملتك: 12 دولاراً أمريكياً، 10 يورو، أو 40 ليرة تركية، وتظهر لك بوضوح قبل تأكيد الدفع — لا رسوم خفية أبداً.'] },
                     { heading: 'الشحن الدولي', paragraphs: ['نشحن لمعظم دول العالم خلال 5-14 يوم عمل حسب الدولة. قد تُفرض رسوم جمركية أو ضرائب في بلد الوصول وهي مسؤولية المستلم. تأكد من صحة العنوان ورقم الهاتف لتفادي تأخير التسليم.'] },
                     { heading: 'تتبع طلبك', paragraphs: ['فور شحن طلبك تصلك رسالة برقم التتبع، وتستطيع متابعته من صفحة طلباتي في حسابك. إن تأخر طلبك عن المدة المتوقعة تواصل معنا وسنتابعه لك مباشرة مع شركة الشحن.'] },
                     { heading: 'تجهيز الطلبات', paragraphs: ['لأن قطعنا مصنوعة يدوياً، قد تحتاج بعض الطلبات 1-2 يوم عمل للتجهيز والفحص قبل الشحن — لنصلك بأفضل جودة تليق بك.'] },
@@ -438,7 +438,7 @@ export const translations = {
             }
         },
         header: {
-            freeShipping: 'Free shipping for orders over 500 SAR',
+            freeShipping: 'Worldwide shipping — fees calculated at checkout',
             searchPlaceholder: 'Search for products...',
             searchTitle: 'Search the Site',
             searchSubtitle: 'Search for bags, clothing, accessories and more...',
@@ -747,7 +747,7 @@ export const translations = {
                 items: [
                     { q: 'How do I order from SHMLH?', a: 'Browse the products, add what you love to the cart, then head to checkout, enter your shipping details and choose a payment method. You will receive a confirmation message with your order number right away.' },
                     { q: 'What payment methods are available?', a: 'We accept credit cards (Visa and Mastercard) and Apple Pay. All payments are encrypted and processed through secure gateways — we never store your card details.' },
-                    { q: 'How long does shipping take?', a: 'Standard shipping takes 3-7 business days, express 1-3 business days depending on your destination. Shipping is free for orders over 500 SAR. You can track your order from the My Orders page.' },
+                    { q: 'How long does shipping take?', a: 'Standard shipping takes 3-7 business days depending on your destination and costs 12 USD, 10 EUR, or 40 TRY depending on your currency. You can track your order from the My Orders page.' },
                     { q: 'Do you ship outside Palestine?', a: 'Yes, we ship to most countries worldwide. International fees and times are calculated at checkout by country; customs duties in the destination country, if any, are the recipient\'s responsibility.' },
                     { q: 'What is the exchange and return policy?', a: 'You can request an exchange or return within 14 days of delivery, provided the piece is in its original condition. Full details are on the Exchange & Returns page.' },
                     { q: 'Are the pieces authentic and handmade?', a: 'Yes — every SHMLH piece is handmade by Palestinian artisans and carries heritage embroidery details. Slight variations between pieces are the signature of handwork and proof of authenticity.' },
@@ -786,8 +786,8 @@ export const translations = {
                 title: 'Shipping & Delivery',
                 subtitle: 'Options, times, and fees',
                 sections: [
-                    { heading: 'Shipping options', paragraphs: ['We offer three options to suit your need:'], list: ['Standard shipping: 3-7 business days.', 'Express shipping: 1-3 business days.', 'Next-day shipping: for select addresses, availability shown at checkout.'] },
-                    { heading: 'Shipping fees', paragraphs: ['Shipping is free on all orders over 500 SAR. Below that, fees are calculated by weight and destination and shown clearly before payment confirmation — never any hidden fees.'] },
+                    { heading: 'Shipping options', paragraphs: ['We offer standard shipping to all supported destinations within 3-7 business days depending on the country; the available method and its price appear at checkout.'] },
+                    { heading: 'Shipping fees', paragraphs: ['Shipping fees depend on your destination and currency: 12 USD, 10 EUR, or 40 TRY — shown clearly before payment confirmation, never any hidden fees.'] },
                     { heading: 'International shipping', paragraphs: ['We ship to most countries within 5-14 business days depending on the country. Customs duties or taxes in the destination country, if any, are the recipient\'s responsibility. Please double-check your address and phone to avoid delivery delays.'] },
                     { heading: 'Track your order', paragraphs: ['As soon as your order ships you receive a message with the tracking number, and you can follow it from the My Orders page. If your order passes its expected time, contact us and we will chase it with the carrier for you.'] },
                     { heading: 'Preparing orders', paragraphs: ['Because our pieces are handmade, some orders need 1-2 business days of preparation and inspection before shipping — so they reach you in the finest quality you deserve.'] },

@@ -114,7 +114,7 @@ export default async function ProductsPage() {
     }
 
     return (
-        <Suspense fallback={<div className="min-h-screen pt-20 md:pt-32 text-center text-gray-500">Loading products...</div>}>
+        <Suspense fallback={<div className="min-h-screen pt-28 md:pt-32 text-center text-gray-500">Loading products...</div>}>
             <ProductsPageContent initialProducts={products} attributeOptions={attributeOptions} categories={categories} />
         </Suspense>
     );

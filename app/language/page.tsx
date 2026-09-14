@@ -23,7 +23,7 @@ export default function LanguagePage() {
     ];
 
     return (
-        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24 bg-white">
+        <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24 bg-white">
             <div className="container mx-auto max-w-2xl">
                 {/* Header */}
                 <div className="text-center mb-6 md:mb-12">

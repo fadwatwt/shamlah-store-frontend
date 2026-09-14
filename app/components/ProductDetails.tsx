@@ -398,7 +398,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     return (
         <>
-        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 bg-background" dir={dir}>
+        <main className="min-h-screen pt-28 md:pt-32 pb-12 md:pb-20 bg-background" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Upper Section: Breadcrumbs */}

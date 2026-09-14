@@ -59,7 +59,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         category = await getCategoryBySlug(slug, languageCode as 'AR' | 'EN');
     } catch {
         return (
-            <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
+            <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="container mx-auto text-center max-w-md">
                     <h1 className="text-2xl font-bold text-accent mb-4">
                         {language === 'ar' ? 'تعذّر تحميل الفئة' : 'Failed to load category'}
@@ -82,7 +82,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
     if (!category) {
         return (
-            <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen">
+            <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen">
                 <div className="container mx-auto text-center">
                     <h1 className="text-3xl font-bold text-accent mb-4">Category Not Found</h1>
                     <p className="text-gray-600">The category you&apos;re looking for doesn&apos;t exist.</p>

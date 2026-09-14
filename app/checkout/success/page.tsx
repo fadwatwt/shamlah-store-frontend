@@ -109,7 +109,7 @@ export default function SuccessPage() {
         <div className="min-h-screen bg-white" dir={dir}>
             <Header />
 
-            <main className="pt-20 md:pt-32 pb-12 md:pb-20 px-4">
+            <main className="pt-28 md:pt-32 pb-12 md:pb-20 px-4">
                 <div className="max-w-[600px] mx-auto text-center">
                     {/* Success Icon */}
                     <div className="mb-6 md:mb-8 flex justify-center">

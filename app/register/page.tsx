@@ -70,7 +70,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 md:px-24 bg-white" dir={dir}>
+        <main className="min-h-screen pt-28 md:pt-32 pb-12 md:pb-20 md:px-24 bg-white" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Header */}
@@ -121,7 +121,7 @@ export default function RegisterPage() {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white pr-10"
+                                    className={`w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white ${dir === 'rtl' ? 'pr-10' : 'pl-10'}`}
                                     placeholder="example@email.com"
                                     required
                                 />
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                                     type="tel"
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white pr-10"
+                                    className={`w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white ${dir === 'rtl' ? 'pr-10' : 'pl-10'}`}
                                     placeholder="+970 XXX XXX XXX"
                                     dir="ltr"
                                 />
@@ -161,7 +161,7 @@ export default function RegisterPage() {
                                     type="text"
                                     value={city}
                                     onChange={(e) => setCity(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white pr-10"
+                                    className={`w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white ${dir === 'rtl' ? 'pr-10' : 'pl-10'}`}
                                     placeholder={t.profile.city}
                                 />
                                 <div className={`absolute top-1/2 -translate-y-1/2 ${dir === 'rtl' ? 'right-3' : 'left-3'} text-gray-400`}>
@@ -181,7 +181,7 @@ export default function RegisterPage() {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white pr-10"
+                                    className={`w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white ${dir === 'rtl' ? 'pr-10' : 'pl-10'}`}
                                     placeholder="........"
                                     required
                                 />
@@ -201,7 +201,7 @@ export default function RegisterPage() {
                                     type="password"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white pr-10"
+                                    className={`w-full px-4 py-3 rounded-md border border-gray-200 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent text-start bg-white ${dir === 'rtl' ? 'pr-10' : 'pl-10'}`}
                                     placeholder="........"
                                     required
                                 />
@@ -218,11 +218,11 @@ export default function RegisterPage() {
                             <input type="checkbox" id="terms" className="w-4 h-4 text-accent border-gray-300 rounded focus:ring-accent" required />
                             <label htmlFor="terms" className="text-sm text-gray-500 cursor-pointer select-none">
                                 {dir === 'rtl' ? 'أوافق على ' : 'I agree to '}
-                                <Link href="#" className="text-accent hover:underline">
+                                <Link href="/terms" className="text-accent hover:underline">
                                     {t.footer.links_label.terms}
                                 </Link>
                                 {dir === 'rtl' ? ' و ' : ' and '}
-                                <Link href="#" className="text-accent hover:underline">
+                                <Link href="/privacy" className="text-accent hover:underline">
                                     {t.footer.links_label.privacy}
                                 </Link>
                             </label>

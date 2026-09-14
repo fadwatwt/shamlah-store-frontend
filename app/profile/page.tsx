@@ -40,7 +40,7 @@ export default function ProfilePage() {
 
     if (loading) {
         return (
-            <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 md:px-24 flex items-center justify-center">
+            <main className="min-h-screen pt-28 md:pt-32 pb-12 md:pb-20 md:px-24 flex items-center justify-center">
                 <div className="w-8 h-8 rounded-full border-4 border-accent border-r-transparent animate-spin"></div>
             </main>
         );
@@ -66,7 +66,7 @@ export default function ProfilePage() {
     const displayPhone = (displayAddress as any)?.phone || null;
 
     return (
-        <main className="min-h-screen pt-20 md:pt-32 pb-12 md:pb-20 md:px-24" dir={dir}>
+        <main className="min-h-screen pt-28 md:pt-32 pb-12 md:pb-20 md:px-24" dir={dir}>
             <div className="container mx-auto px-6 lg:px-12">
 
                 {/* Page Title */}

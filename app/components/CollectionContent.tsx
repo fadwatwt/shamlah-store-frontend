@@ -134,7 +134,7 @@ export default function CollectionContent({ collection, initialProducts }: Colle
     );
 
     return (
-        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={dir}>
+        <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen" dir={dir}>
             <div className="container mx-auto">
                 {/* Collection Header */}
                 <div className="relative rounded-lg overflow-hidden mb-8 md:mb-16">

@@ -22,7 +22,7 @@ export default function PolicyLayout({ title, subtitle, showUpdated, children }:
     const { t, dir } = useLanguage();
 
     return (
-        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen bg-white" dir={dir}>
+        <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen bg-white" dir={dir}>
             <div className="container mx-auto max-w-3xl">
                 {/* Page Hero */}
                 <div className="text-center mb-10 md:mb-14">

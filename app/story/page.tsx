@@ -26,7 +26,7 @@ export default function StoryPage() {
 
 
     return (
-        <main className="pt-20 flex flex-col gap-8 md:gap-16 lg:gap-20">
+        <main className="pt-28 flex flex-col gap-8 md:gap-16 lg:gap-20">
             {/* Hero Section — multi-image slider */}
             <section className="relative flex items-center h-[80vh] justify-center overflow-hidden">
                 <div className="absolute inset-0 z-0">

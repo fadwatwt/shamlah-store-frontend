@@ -411,10 +411,14 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                     {expandedSections.price && (
                         <div className="flex items-center gap-4 mb-3">
                             <input
-                                type="number"
+                                // type="text" (not "number"): browsers shape number-input
+                                // digits by page language (١٢٣ in Arabic). Text +
+                                // inputMode keeps the numeric keyboard while the
+                                // store standard (Western digits) stays in control —
+                                // normalizeDigits converts any Eastern digits typed.
+                                type="text"
                                 inputMode="decimal"
                                 dir="ltr"
-                                min="0"
                                 placeholder={t.filters.minPrice}
                                 value={priceMin}
                                 onChange={(e) => setPriceMin(normalizeDigits(e.target.value))}
@@ -423,10 +427,9 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                             />
                             <span className="text-gray-400">-</span>
                             <input
-                                type="number"
+                                type="text"
                                 inputMode="decimal"
                                 dir="ltr"
-                                min="0"
                                 placeholder={t.filters.maxPrice}
                                 value={priceMax}
                                 onChange={(e) => setPriceMax(normalizeDigits(e.target.value))}

@@ -135,7 +135,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[100] flex items-start pt-20 justify-center p-4 animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-start pt-28 justify-center p-4 animate-in fade-in duration-200"
             dir={dir}
             role="dialog"
             aria-modal="true"

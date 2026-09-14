@@ -1,35 +1,61 @@
 'use client';
 
 import React from 'react';
-import { useLanguage } from '../context/LanguageContext';
+import Image from 'next/image';
+
+function BrandMark({ className = '', white = false }: { className?: string; white?: boolean }) {
+    return (
+        <span className={`relative block overflow-hidden ${className}`}>
+            <Image
+                src="/logo.png"
+                alt="SHMLH"
+                fill
+                sizes="(max-width: 768px) 120px, 180px"
+                className={`object-contain shmlh-breathe ${white ? 'brightness-0 invert' : ''}`}
+                priority={false}
+            />
+        </span>
+    );
+}
 
 export const LoadingSpinner = ({ size = 'md', color = 'accent' }: { size?: 'sm' | 'md' | 'lg', color?: string }) => {
-  const sizeClasses = {
-    sm: 'w-4 h-4 border-2',
-    md: 'w-8 h-8 border-3',
-    lg: 'w-12 h-12 border-4',
-  };
+    const white = color === 'white';
+    const ring = white ? 'border-white/30 border-t-white' : 'border-accent/20 border-t-accent';
 
-  return (
-    <div className={`inline-block ${sizeClasses[size]} border-t-transparent border-${color} rounded-full animate-spin`}></div>
-  );
+    // Small (buttons): clean breathing mark. Larger: mark crowned by a thin
+    // rotating ring — the luxury-preloader look.
+    if (size === 'sm') {
+        return (
+            <span className="inline-flex items-center justify-center">
+                <BrandMark className="h-5 w-12" white={white} />
+            </span>
+        );
+    }
+
+    const box = size === 'lg' ? 'h-16 w-40' : 'h-11 w-28';
+    const frame = size === 'lg' ? '-inset-3 border-2' : '-inset-2 border-2';
+    return (
+        <span className="relative inline-flex items-center justify-center p-3">
+            <span className={`absolute ${frame} ${ring} rounded-full animate-spin`} aria-hidden="true" />
+            <BrandMark className={box} white={white} />
+        </span>
+    );
 };
 
 export const LoadingOverlay = () => {
-  const { language } = useLanguage();
-  const brandName = language === 'ar' ? 'شملة' : 'SHMLH';
-
-  return (
-    <div className="fixed inset-0 bg-white/60 backdrop-blur-[2px] z-[9999] flex items-center justify-center animate-in fade-in duration-300">
-      <div className="relative">
-        {/* Outer Glow */}
-        <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full animate-pulse"></div>
-        {/* Spinner */}
-        <div className="relative flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
-          <p className={`text-accent font-serif tracking-widest animate-pulse ${language === 'ar' ? 'text-2xl' : 'text-lg'}`}>{brandName}</p>
+    return (
+        <div className="fixed inset-0 bg-[#FBF8F3]/60 backdrop-blur-[2px] z-[9999] flex items-center justify-center animate-in fade-in duration-300">
+            <div className="flex flex-col items-center">
+                <div className="relative">
+                    {/* Soft brand glow */}
+                    <div className="absolute -inset-8 bg-accent/10 blur-2xl rounded-full" aria-hidden="true" />
+                    <BrandMark className="relative h-20 w-48 md:h-24 md:w-56" />
+                </div>
+                {/* Elegant sweeping line */}
+                <div className="mt-7 h-px w-40 overflow-hidden bg-accent/15 rounded-full" aria-hidden="true">
+                    <div className="h-full w-1/3 bg-gradient-to-r from-transparent via-accent to-transparent shmlh-sweep-bar" />
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };

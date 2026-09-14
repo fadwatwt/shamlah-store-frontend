@@ -169,7 +169,9 @@ function StripePaymentForm({
     language,
     loading,
     setLoading,
-    onBack
+    onBack,
+    termsAccepted,
+    onTermsChange
 }: {
     checkoutId: string;
     total: number;
@@ -177,12 +179,20 @@ function StripePaymentForm({
     loading: boolean;
     setLoading: (loading: boolean) => void;
     onBack: () => void;
+    termsAccepted: boolean;
+    onTermsChange: (accepted: boolean) => void;
 }) {
     const stripe = useStripe();
     const elements = useElements();
 
     const handlePaymentSubmit = async () => {
         if (!stripe || !elements) {
+            return;
+        }
+        if (!termsAccepted) {
+            alert(language === 'ar'
+                ? 'يرجى الموافقة على الشروط والأحكام وسياسة الاستبدال والإرجاع أولاً'
+                : 'Please accept the Terms & Conditions and Return Policy first');
             return;
         }
 
@@ -270,12 +280,32 @@ function StripePaymentForm({
                 <button
                     type="button"
                     onClick={handlePaymentSubmit}
-                    disabled={!stripe || loading}
+                    disabled={!stripe || loading || !termsAccepted}
                     className="flex-[2] bg-accent text-white py-4 font-bold text-lg hover:bg-[#500000] rounded-lg smooth-transition shadow-xl shadow-accent/20 disabled:opacity-50"
                 >
                     {loading ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'تأكيد الدفع' : 'Confirm Payment')}
                 </button>
             </div>
+            {/* Terms & returns acceptance — required by payment gateways.
+                Links open in a new tab so the checkout/payment state is kept. */}
+            <label className="mt-4 flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => onTermsChange(e.target.checked)}
+                    className="mt-1 w-4 h-4 shrink-0 accent-accent"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                    {language === 'ar' ? 'أوافق على ' : 'I agree to the '}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
+                        {language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
+                    </a>
+                    {language === 'ar' ? ' و ' : ' and the '}
+                    <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
+                        {language === 'ar' ? 'سياسة الاستبدال والإرجاع' : 'Return Policy'}
+                    </a>
+                </span>
+            </label>
         </div>
     );
 }
@@ -295,6 +325,9 @@ export default function CheckoutPage() {
     // Stripe state
     const [stripePromise, setStripePromise] = useState<any>(null);
     const [stripeError, setStripeError] = useState<string | null>(null);
+
+    // Terms & returns acceptance — required before payment (gateway compliance).
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -540,7 +573,7 @@ export default function CheckoutPage() {
             {loading && <LoadingOverlay />}
             <Header />
 
-            <main className="pt-20 md:pt-32 pb-12 md:pb-20 px-4">
+            <main className="pt-28 md:pt-32 pb-12 md:pb-20 px-4">
                 <div className="max-w-[700px] mx-auto">
                     {/* Page Title */}
                     <div className="text-center mb-6 md:mb-12">
@@ -818,14 +851,16 @@ export default function CheckoutPage() {
                                 <div className="space-y-4">
                                     {stripePromise && checkoutId ? (
                                         <Elements stripe={stripePromise} options={stripeElementsOptions}>
-                                            <StripePaymentForm
-                                                checkoutId={checkoutId}
-                                                total={total}
-                                                language={language}
-                                                loading={loading}
-                                                setLoading={setLoading}
-                                                onBack={handleBack}
-                                            />
+                                                <StripePaymentForm
+                                                    checkoutId={checkoutId}
+                                                    total={total}
+                                                    language={language}
+                                                    loading={loading}
+                                                    setLoading={setLoading}
+                                                    onBack={handleBack}
+                                                    termsAccepted={termsAccepted}
+                                                    onTermsChange={setTermsAccepted}
+                                                />
                                         </Elements>
                                     ) : (
                                         <div className="p-6 bg-gray-50 rounded-lg text-center">

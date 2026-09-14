@@ -41,8 +41,25 @@ export function getCurrencyForChannel(channel?: string): string {
   return CHANNEL_CURRENCY_MAP[ch] || 'USD';
 }
 
+// Explicit symbols — Intl cannot be trusted for these: the Arabic locale has
+// no narrow "$" for USD, so even `currencyDisplay: 'narrowSymbol'` renders
+// the long form ("US$ 80"). Unknown codes fall back to the code itself.
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  TRY: '₺',
+  SAR: 'ر.س',
+  AED: 'د.إ',
+  QAR: 'ر.ق',
+  KWD: 'د.ك',
+  EGP: 'ج.م',
+  JOD: 'د.ا',
+  GBP: '£',
+};
+
 export function formatPrice(amount: number, currencyCode?: string, locale?: string) {
   const currency = (currencyCode || getCurrencyForChannel()).toUpperCase();
+  const symbol = CURRENCY_SYMBOLS[currency] || currency;
   const loc = locale || (typeof navigator !== 'undefined' && navigator.language) || 'en-US';
   // Map Arabic locale to appropriate formatting - Arabic language but Latin
   // (Western) digits per store standard, en-US for English
@@ -50,15 +67,15 @@ export function formatPrice(amount: number, currencyCode?: string, locale?: stri
   const isArabic = loc.startsWith('ar');
   const formatLocale = isArabic ? AR_LATN_LOCALE : 'en-US';
   try {
-    return new Intl.NumberFormat(formatLocale, {
-      style: 'currency',
-      currency,
+    // Number only via Intl (grouping + Western digits); symbol attached
+    // manually in the locale's position: "$80" in English, "80 $" in Arabic.
+    const numberPart = new Intl.NumberFormat(formatLocale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount);
+    return isArabic ? `${numberPart} ${symbol}` : `${symbol}${numberPart}`;
   } catch {
     // Fallback to simple
-    const symbol = currency === 'EUR' ? '€' : currency === 'TRY' ? '₺' : currency === 'SAR' ? 'ر.س' : '$';
-    return `${symbol}${Math.round(amount)}`;
+    return isArabic ? `${Math.round(amount)} ${symbol}` : `${symbol}${Math.round(amount)}`;
   }
 }

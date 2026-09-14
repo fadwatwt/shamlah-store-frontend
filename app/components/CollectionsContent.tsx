@@ -34,7 +34,7 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
 
     if (collections.length === 0) {
         return (
-            <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
+            <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
                 <div className="container mx-auto">
                     <div className="text-center mb-8 md:mb-16">
                         <div className="text-accent mb-4">
@@ -53,7 +53,7 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
     }
 
     return (
-        <main className="pt-20 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
+        <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
             <div className="container mx-auto">
                 <div className="text-center mb-8 md:mb-16">
                     <div className="text-accent mb-4">
