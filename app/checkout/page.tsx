@@ -16,6 +16,7 @@ import {
     completeCheckout
 } from '@/lib/queries/cart';
 import { getShopShippingMethods } from '@/lib/queries/shop';
+import { getCookieChannel } from '@/lib/saleor/channel-mapping';
 import { LoadingOverlay } from '../components/LoadingSpinner';
 import Header from '../components/Header';
 import { loadStripe } from '@stripe/stripe-js';
@@ -314,7 +315,9 @@ export default function CheckoutPage() {
     // Pre-load shipping methods from shop query
     useEffect(() => {
         const loadInitialShipping = async () => {
-            const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
+            // Shipping methods must come from the visitor's geo channel so their
+            // prices match the checkout currency.
+            const channel = getCookieChannel() || process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
             const methods = await getShopShippingMethods(channel);
             if (methods.length > 0) {
                 setAvailableShippingMethods(methods);

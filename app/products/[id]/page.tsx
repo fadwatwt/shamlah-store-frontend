@@ -2,6 +2,7 @@ import { getProductById } from '@/lib/queries/products';
 import { notFound } from "next/navigation";
 import ProductDetails from '../../components/ProductDetails';
 import { cookies } from 'next/headers';
+import { getRequestChannel } from '@/lib/saleor/get-request-channel';
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: rawId } = await params;
@@ -14,7 +15,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
     let productData;
     try {
-        productData = await getProductById(id, undefined, languageCode as 'AR' | 'EN');
+        // Visitor's geo channel: TR → TRY prices, Europe → EUR, else USD.
+        const channel = await getRequestChannel();
+        productData = await getProductById(id, channel, languageCode as 'AR' | 'EN');
     } catch {
         // Network/server error after retries — show friendly error instead of 404
         return (
@@ -48,7 +51,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     // Extract price safely: try PriceRange start, or fall back to first variant price
     const price = product.pricing?.priceRange?.start?.gross?.amount ||
         product.variants?.[0]?.pricing?.price?.gross?.amount || 0;
-    const currency = product.pricing?.priceRange?.start?.gross?.currency || '$';
+    const currency = product.pricing?.priceRange?.start?.gross?.currency || 'USD';
 
     // Extract images: first image or fallback
     const images = product.images?.length ? product.images.map(img => img.url) : [

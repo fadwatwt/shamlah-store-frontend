@@ -5,10 +5,13 @@ import { getAttributes } from '@/lib/queries/attributes';
 import { getCategories } from '@/lib/queries/categories';
 import { Product, Category, SaleorAttribute } from '@/lib/types/saleor';
 import ProductsPageContent from '../components/ProductsPageContent';
+import { getRequestChannel } from '@/lib/saleor/get-request-channel';
 
 function transformSaleorProduct(product: Product) {
     const price = product.pricing?.priceRange?.start?.gross?.amount ||
         product.variants?.[0]?.pricing?.price?.gross?.amount || 0;
+    const currency = product.pricing?.priceRange?.start?.gross?.currency ||
+        product.variants?.[0]?.pricing?.price?.gross?.currency || 'USD';
     const image = product.images?.[0]?.url ||
         product.thumbnail?.url ||
         'https://placehold.co/400x500/671618/white?text=Product';
@@ -28,6 +31,7 @@ function transformSaleorProduct(product: Product) {
         id: product.id,
         name: product.translation?.name || product.name,
         price: Math.round(price),
+        currency: currency,
         image: image,
         rating: 5,
         isBestSeller,
@@ -47,12 +51,14 @@ export default async function ProductsPage() {
     const cookieStore = await cookies();
     const language = cookieStore.get('language')?.value || 'en';
     const languageCode = language === 'ar' ? 'AR' : 'EN';
+    // Visitor's geo channel: TR → TRY prices, Europe → EUR, else USD.
+    const channel = await getRequestChannel();
 
     try {
         const [saleorProducts, attrs, cats] = await Promise.all([
-            getProducts(100, 'default-channel', languageCode as 'AR' | 'EN'),
-            getAttributes(languageCode as 'AR' | 'EN'),
-            getCategories(languageCode as 'AR' | 'EN'),
+            getProducts(100, channel, languageCode as 'AR' | 'EN'),
+            getAttributes(languageCode as 'AR' | 'EN', channel),
+            getCategories(languageCode as 'AR' | 'EN', channel),
         ]);
         products = saleorProducts.map(transformSaleorProduct);
         attributeOptions = attrs;

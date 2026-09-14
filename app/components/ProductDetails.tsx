@@ -9,7 +9,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { getProductsByCategory } from '@/lib/queries/products';
-import { extractHexColors, isColorAttribute, isHandmadeProduct, isHexColor } from '@/lib/utils/attributes';
+import { getCookieChannel } from '@/lib/saleor/channel-mapping';
+import { extractHexColors, isColorAttribute, isHandmadeProduct, isHexColor, displayAttributeName } from '@/lib/utils/attributes';
+import { formatPrice, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
 import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
 
@@ -216,7 +218,8 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     useEffect(() => {
         const fetchData = async () => {
-            const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
+            // Related products in the visitor's geo channel (cookie set by middleware).
+            const channel = getCookieChannel() || process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
             const langCode = language === 'ar' ? 'AR' : 'EN';
 
             // Fetch related products if category exists
@@ -231,9 +234,11 @@ export default function ProductDetails({ product, price, currency, images, sizes
         fetchData();
     }, [product.id, product.category?.id, language]);
 
-    // Group variants by attributes (e.g., Size, Color)
+    // Group variants by attributes (e.g., Size, Color).
+    // Keyed by the RAW name (matching logic depends on it); the slug is kept
+    // alongside so the heading can show the short display name.
     const variantAttributes = useMemo(() => {
-        const map = new Map<string, Set<string>>();
+        const map = new Map<string, { slug?: string; values: Set<string> }>();
         if (variants) {
             variants.forEach((variant: any) => {
                 variant.attributes?.forEach((attr: any) => {
@@ -241,9 +246,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
                     const attrValue = attr.values[0]?.translation?.name || attr.values[0]?.name;
                     if (attrName && attrValue) {
                         if (!map.has(attrName)) {
-                            map.set(attrName, new Set());
+                            map.set(attrName, { slug: attr.attribute.slug, values: new Set() });
                         }
-                        map.get(attrName)?.add(attrValue);
+                        map.get(attrName)?.values.add(attrValue);
                     }
                 });
             });
@@ -274,9 +279,9 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         }
                     });
                     // Fill gaps if any
-                    variantAttributes.forEach((values, name) => {
+                    variantAttributes.forEach((entry, name) => {
                         if (!initialOptions[name]) {
-                            initialOptions[name] = Array.from(values)[0];
+                            initialOptions[name] = Array.from(entry.values)[0];
                         }
                     });
                     setSelectedOptions(initialOptions);
@@ -345,7 +350,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     // True when variants already expose a color selector (then the fallback swatches stay hidden)
     const hasColorAttribute = Array.from(variantAttributes.keys()).some(key =>
-        isColorAttribute({ name: key }) || Array.from(variantAttributes.get(key) || []).every(v => isHexColor(v))
+        isColorAttribute({ name: key }) || Array.from(variantAttributes.get(key)?.values || []).every(v => isHexColor(v))
     );
 
     // Translation handling
@@ -519,9 +524,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         {/* Price & Actions Row */}
                         <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-200">
                             <p className="text-2xl text-accent font-medium">
-                                {language === 'ar'
-                                    ? `${Math.round(distinctPrice)} ${t.common.currency}`
-                                    : `$${Math.round(distinctPrice)}`}
+                                {formatPrice(distinctPrice, currency, language === 'ar' ? AR_LATN_LOCALE : 'en-US')}
                             </p>
                             <div className="flex gap-4 items-center">
                                 <button
@@ -569,13 +572,13 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         <div className="space-y-6 mb-6 md:mb-10 text-start">
 
                             {/* Dynamic Variant Selectors */}
-                            {Array.from(variantAttributes.entries()).map(([attrName, values]) => {
-                                const valueList = Array.from(values);
+                            {Array.from(variantAttributes.entries()).map(([attrName, entry]) => {
+                                const valueList = Array.from(entry.values);
                                 // Color groups (hex values) render as swatch circles, not text buttons
                                 const isSwatchGroup = valueList.length > 0 && valueList.every(v => isHexColor(v));
                                 return (
                                 <div key={attrName}>
-                                    <h3 className="font-bold text-gray-900 mb-3">{attrName}</h3>
+                                    <h3 className="font-bold text-gray-900 mb-3">{displayAttributeName({ name: attrName, slug: entry.slug })}</h3>
                                     <div className="flex justify-start gap-3 flex-wrap">
                                         {valueList.map((value) => {
                                             const isSelected = selectedOptions[attrName] === value || (!selectedOptions[attrName] && valueList[0] === value);
@@ -722,28 +725,34 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     <div className={`pb-4 text-sm text-gray-600 leading-relaxed ${language === 'ar' ? 'text-right' : 'text-left'}`}>
                                         {attributes.length > 0 ? (
                                             <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>
-                                                {attributes.filter(attr => {
-                                                    if (isColorAttribute(attr.attribute)) return false;
-                                                    const n = attr.attribute.name?.toLowerCase();
-                                                    const s = attr.attribute.slug?.toLowerCase();
-                                                    return n !== 'best seller' && s !== 'best-seller' && n !== 'الأكثر مبيعاً'
-                                                        && n !== 'product label' && n !== 'label' && s !== 'product-label' && s !== 'label'
-                                                        && n !== 'product notes' && s !== 'product-notes' && n !== 'ملاحظات المنتج'
-                                                        && !['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(attr.attribute.name);
-                                                }).map(attr => ({
-                                                    attr,
-                                                    valueText: attr.values
-                                                        .map(v => v.translation?.name || v.name)
-                                                        .filter(Boolean)
-                                                        .join(', ')
-                                                        .trim(),
-                                                })).filter(({ valueText }) => valueText.length > 0)
-                                                .map(({ attr, valueText }, idx) => (
-                                                    <li key={idx}>
-                                                        <span className="font-semibold">{attr.attribute.translation?.name || attr.attribute.name}:</span>{' '}
-                                                        {valueText}
-                                                    </li>
-                                                ))}
+                                                {(() => {
+                                                    // Merge attributes that share one display name
+                                                    // (e.g. "Bag Features" + "Features") into a single row.
+                                                    const merged = new Map<string, string[]>();
+                                                    attributes.filter(attr => {
+                                                        if (isColorAttribute(attr.attribute)) return false;
+                                                        const n = attr.attribute.name?.toLowerCase();
+                                                        const s = attr.attribute.slug?.toLowerCase();
+                                                        return n !== 'best seller' && s !== 'best-seller' && n !== 'الأكثر مبيعاً'
+                                                            && n !== 'product label' && n !== 'label' && s !== 'product-label' && s !== 'label'
+                                                            && n !== 'product notes' && s !== 'product-notes' && n !== 'ملاحظات المنتج'
+                                                            && !['Care Instructions', 'Care', 'تعليمات العناية', 'العناية'].includes(attr.attribute.name);
+                                                    }).forEach(attr => {
+                                                        const label = displayAttributeName(attr.attribute);
+                                                        const list = merged.get(label) || [];
+                                                        (attr.values || [])
+                                                            .map(v => v.translation?.name || v.name)
+                                                            .filter((v): v is string => Boolean(v))
+                                                            .forEach(v => { if (!list.includes(v)) list.push(v); });
+                                                        if (list.length > 0) merged.set(label, list);
+                                                    });
+                                                    return Array.from(merged.entries()).map(([label, vals], idx) => (
+                                                        <li key={idx}>
+                                                            <span className="font-semibold">{label}:</span>{' '}
+                                                            {vals.join(', ')}
+                                                        </li>
+                                                    ));
+                                                })()}
                                             </ul>
                                         ) : (
                                             <ul className={`list-disc ${language === 'ar' ? 'pr-5' : 'pl-5'} space-y-1`}>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { Collection } from '../../lib/types/saleor';
+import { editorJsToText } from '../../lib/utils/editorjs';
 
 interface CollectionsContentProps {
     collections: Collection[];
@@ -18,8 +19,9 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
     };
 
     const getCollectionDescription = (collection: Collection) => {
-        if (language === 'ar' && collection.translation?.description) return collection.translation.description;
-        return collection.description;
+        // Descriptions are stored as EditorJS JSON — extract readable text.
+        if (language === 'ar' && collection.translation?.description) return editorJsToText(collection.translation.description);
+        return editorJsToText(collection.description);
     };
 
     const getPreviewImages = (collection: Collection): string[] => {

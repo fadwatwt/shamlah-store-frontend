@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SaleorAttribute } from '../../lib/types/saleor';
-import { isColorAttribute } from '../../lib/utils/attributes';
+import { isColorAttribute, displayAttributeName } from '../../lib/utils/attributes';
 import { normalizeDigits } from '../../lib/utils/formatPrice';
 
 // Builds the attribute URL param value. The backend filter matches by value slug.
@@ -222,7 +222,9 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
 
         return Array.from(attrGroups.values()).map(g => ({
             attributeSlug: g.attributeSlug,
-            label: g.label,
+            // Display-only: hide the organizational prefix ("Bag Carry" -> "Carry").
+            // Slugs are untouched, so filtering keeps working.
+            label: displayAttributeName({ name: g.label, slug: g.attributeSlug }),
             values: Array.from(g.values.entries()).map(([value, label]) => ({ value, label })),
         }));
     }, [scopedProducts, attributeOptions]);

@@ -235,11 +235,10 @@ export default function ProductCard({
                         {name}
                     </h3>
 
-                    {/* Price */}
+                    {/* Price — currency always comes from the price data itself,
+                        so the symbol follows the visitor's channel (USD/EUR/TRY). */}
                     <p className="text-xl text-center font-semibold text-accent mb-3">
-                        {language === 'ar'
-                            ? `${Math.round(price).toLocaleString(AR_LATN_LOCALE)} ${t.common.currency}`
-                            : formatPrice(price, currency || getCurrencyForChannel(), 'en-US')}
+                        {formatPrice(price, currency || getCurrencyForChannel(), language === 'ar' ? AR_LATN_LOCALE : 'en-US')}
                     </p>
 
                     {/* Colors */}

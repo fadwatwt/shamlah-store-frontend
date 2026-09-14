@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { request } from '@/lib/saleor-client';
+import { DEFAULT_CHANNEL, isKnownChannelSlug } from '@/lib/saleor/channel-mapping';
 
 // Lightweight live-search payload — only the fields the search dropdown needs.
 const LIVE_SEARCH_QUERY = (languageCode: string) => `
@@ -59,7 +60,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'global-usd';
+    // Visitor's geo channel from cookie (middleware sets it from geo-IP).
+    const cookieSlug = req.cookies.get('saleor-channel')?.value?.trim();
+    const channel = (cookieSlug && isKnownChannelSlug(cookieSlug))
+      ? cookieSlug
+      : (process.env.NEXT_PUBLIC_SALEOR_CHANNEL || DEFAULT_CHANNEL);
     const data = await request<{ products: { edges: Array<{ node: LiveSearchNode }> } }>(
       LIVE_SEARCH_QUERY(langParam),
       { first: 100, channel }

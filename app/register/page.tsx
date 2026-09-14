@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { getCookieChannel } from '@/lib/saleor/channel-mapping';
 
 export default function RegisterPage() {
     const { t, dir } = useLanguage();
@@ -45,7 +46,7 @@ export default function RegisterPage() {
                 email,
                 password,
                 redirectUrl: window.location.origin + '/login',
-                channel: process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel',
+                channel: getCookieChannel() || process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel',
                 firstName,
                 lastName,
                 phone,

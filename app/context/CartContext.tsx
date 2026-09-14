@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { createCheckout, addLinesToCheckout, getCheckout, updateCheckoutLines, deleteCheckoutLines } from '@/lib/queries/cart';
+import { getCookieChannel } from '@/lib/saleor/channel-mapping';
 
 interface CartContextType {
     checkoutId: string | null;
@@ -66,7 +67,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const addToCart = async (variantId: string, quantity: number) => {
         setLoading(true);
         try {
-            const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+            // Checkout must live in the visitor's geo channel so its currency
+            // matches the displayed prices (TR → TRY, Europe → EUR, else USD).
+            const channel = getCookieChannel() || process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
             let currentToken = checkoutToken;
 
             // If no checkout exists, create one

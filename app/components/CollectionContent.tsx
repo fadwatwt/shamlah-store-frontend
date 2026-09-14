@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import ProductCard from './ProductCard';
 import { Collection } from '../../lib/types/saleor';
 import { parsePriceParam } from '../../lib/utils/formatPrice';
+import { editorJsToText } from '../../lib/utils/editorjs';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 
@@ -17,6 +18,7 @@ interface Product {
     id: string;
     name: string;
     price: number;
+    currency?: string;
     image: string;
     rating: number;
     isBestSeller?: boolean;
@@ -117,8 +119,9 @@ export default function CollectionContent({ collection, initialProducts }: Colle
     };
 
     const getDescription = () => {
-        if (language === 'ar' && collection.translation?.description) return collection.translation.description;
-        return collection.description || '';
+        // Descriptions are stored as EditorJS JSON — extract readable text.
+        if (language === 'ar' && collection.translation?.description) return editorJsToText(collection.translation.description);
+        return editorJsToText(collection.description || '');
     };
 
     const name = getName();

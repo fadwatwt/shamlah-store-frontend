@@ -131,7 +131,10 @@ export default function CartPage() {
                                 </div>
                                 <div className="flex justify-between text-gray-600">
                                     <span>{t.cart.shipping}</span>
-                                    <span>{displayShipping > 0 ? formatPrice(displayShipping, channelCurrency, locale) : (language === 'ar' ? 'مجاني' : 'Free')}</span>
+                                    {/* shippingPrice is null until a delivery method is chosen at
+                                        checkout — that is "not yet calculated", not "free". Only a
+                                        selected method priced at 0 is genuinely free. */}
+                                    <span>{shippingPrice ? (displayShipping > 0 ? formatPrice(displayShipping, channelCurrency, locale) : (language === 'ar' ? 'مجاني' : 'Free')) : (language === 'ar' ? 'يُحسب عند الدفع' : 'Calculated at checkout')}</span>
                                 </div>
                                 <div className="border-t border-gray-200 pt-4 mt-4">
                                     <div className="flex justify-between text-xl font-bold text-accent">

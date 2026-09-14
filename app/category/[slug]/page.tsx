@@ -5,6 +5,7 @@ import { getCategoryBySlug } from '@/lib/queries/categories';
 import { getAttributes } from '@/lib/queries/attributes';
 import { Product, Category, SaleorAttribute } from '@/lib/types/saleor';
 import CategoryContent from '../../components/CategoryContent';
+import { getRequestChannel } from '@/lib/saleor/get-request-channel';
 
 interface CategoryPageProps {
     params: Promise<{ slug: string }>;
@@ -13,6 +14,8 @@ interface CategoryPageProps {
 function transformSaleorProduct(product: Product, index: number) {
     const price = product.pricing?.priceRange?.start?.gross?.amount ||
         product.variants?.[0]?.pricing?.price?.gross?.amount || 0;
+    const currency = product.pricing?.priceRange?.start?.gross?.currency ||
+        product.variants?.[0]?.pricing?.price?.gross?.currency || 'USD';
     const image = product.images?.[0]?.url ||
         product.thumbnail?.url ||
         'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=600';
@@ -32,6 +35,7 @@ function transformSaleorProduct(product: Product, index: number) {
         id: product.id,
         name: product.translation?.name || product.name,
         price: Math.round(price),
+        currency: currency,
         image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
         isBestSeller,
@@ -101,7 +105,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     let products: ReturnType<typeof transformSaleorProduct>[] = [];
     let attributeOptions: SaleorAttribute[] = [];
     try {
-        const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+        // Visitor's geo channel: TR → TRY prices, Europe → EUR, else USD.
+        const channel = await getRequestChannel();
         const [allProducts, attrs] = await Promise.all([
             getProductsByCategoryIds({ categoryIds }, 100, channel, languageCode as 'AR' | 'EN'),
             getAttributes(languageCode as 'AR' | 'EN', channel),
@@ -113,7 +118,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         console.error('[CategoryPage] Error fetching products:', error);
     }
 
-    const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+    const channel = await getRequestChannel();
     return (
         <Suspense fallback={null}>
             <CategoryContent category={category} initialProducts={products} channel={channel} attributeOptions={attributeOptions} />

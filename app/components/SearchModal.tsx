@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '../context/LanguageContext';
 import { useCategoriesContext } from '../context/CategoriesContext';
+import { formatPrice, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
 
 interface SearchModalProps {
     isOpen: boolean;
@@ -214,7 +215,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                                         {p.name}
                                     </span>
                                     <span className="block text-sm text-accent font-medium">
-                                        {language === 'ar' ? `${p.price} ${t.common.currency}` : `$${p.price}`}
+                                        {formatPrice(p.price, p.currency, language === 'ar' ? AR_LATN_LOCALE : 'en-US')}
                                     </span>
                                 </span>
                             </button>

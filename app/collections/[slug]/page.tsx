@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { getCollectionBySlug } from '../../../lib/queries/collections';
 import { Product } from '../../../lib/types/saleor';
 import CollectionContent from '../../components/CollectionContent';
+import { getRequestChannel } from '@/lib/saleor/get-request-channel';
 
 interface CollectionPageProps {
     params: Promise<{ slug: string }>;
@@ -11,6 +12,8 @@ interface CollectionPageProps {
 function transformSaleorProduct(product: Product, index: number) {
     const price = product.pricing?.priceRange?.start?.gross?.amount ||
         product.variants?.[0]?.pricing?.price?.gross?.amount || 0;
+    const currency = product.pricing?.priceRange?.start?.gross?.currency ||
+        product.variants?.[0]?.pricing?.price?.gross?.currency || 'USD';
     const image = product.images?.[0]?.url ||
         product.thumbnail?.url ||
         'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=600';
@@ -30,6 +33,7 @@ function transformSaleorProduct(product: Product, index: number) {
         id: product.id,
         name: product.translation?.name || product.name,
         price: Math.round(price),
+        currency: currency,
         image,
         rating: index < 2 ? 5 : index < 7 ? 5 : 4,
         isBestSeller,
@@ -49,7 +53,8 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
     let collection;
     try {
-        const channel = process.env.NEXT_PUBLIC_SALEOR_CHANNEL || 'default-channel';
+        // Visitor's geo channel: TR → TRY prices, Europe → EUR, else USD.
+        const channel = await getRequestChannel();
         collection = await getCollectionBySlug(slug, channel, languageCode as 'AR' | 'EN');
     } catch {
         return (

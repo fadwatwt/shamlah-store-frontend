@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import ProductCard from './ProductCard';
 import { Category, SaleorAttribute } from '../../lib/types/saleor';
 import { parsePriceParam } from '../../lib/utils/formatPrice';
+import { editorJsToText } from '../../lib/utils/editorjs';
 import FilterSidebar from './FilterSidebar';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -18,6 +19,7 @@ interface Product {
     id: string;
     name: string;
     price: number;
+    currency?: string;
     image: string;
     rating: number;
     isBestSeller?: boolean;
@@ -123,7 +125,8 @@ export default function CategoryContent({ category, initialProducts, channel, at
     const [sortKey, setSortKey] = useState<SortKey>('default');
 
     const categoryName = category.translation?.name || category.name;
-    const categoryDescription = category.translation?.description || category.description;
+    // Descriptions are stored as EditorJS JSON — extract readable text.
+    const categoryDescription = editorJsToText(category.translation?.description || category.description);
 
     // Filter then sort — both happen instantly on the client
     const displayProducts = useMemo(
