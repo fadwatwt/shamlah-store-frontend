@@ -26,12 +26,20 @@ export function isColorAttribute(attr: { name?: string | null; slug?: string | n
 }
 
 // Collects usable color swatches from product attributes (hex values only).
+// A single Saleor plain-text value may hold several hex codes comma-separated
+// ("#000000, #0000FF") — split on commas before validating.
 export function extractHexColors(attributes?: AttributeLike[] | null): Array<{ name: string; hex: string }> {
     if (!attributes || attributes.length === 0) return [];
     const colorAttr = attributes.find(a => a && isColorAttribute(a.attribute));
     if (!colorAttr) return [];
     return (colorAttr.values || [])
-        .map(v => ({ name: v?.name || '', hex: v?.name || '' }))
+        .flatMap(v => {
+            const raw = (v?.name || '').trim();
+            if (!raw) return [];
+            // Allow "#000000, #0000FF" in one field entry
+            return raw.split(',').map(part => part.trim()).filter(Boolean);
+        })
+        .map(hex => ({ name: hex, hex }))
         .filter(c => isHexColor(c.hex));
 }
 

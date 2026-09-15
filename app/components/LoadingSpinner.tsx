@@ -49,7 +49,7 @@ export const LoadingOverlay = () => {
                 <div className="relative">
                     {/* Soft brand glow */}
                     <div className="absolute -inset-8 bg-accent/10 blur-2xl rounded-full" aria-hidden="true" />
-                    <BrandMark className="relative h-20 w-48 md:h-24 md:w-56" />
+                    <BrandMark className="relative h-12 w-28 md:h-14 md:w-32" />
                 </div>
                 {/* Elegant sweeping line */}
                 <div className="mt-7 h-px w-40 overflow-hidden bg-accent/15 rounded-full" aria-hidden="true">

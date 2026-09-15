@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SaleorAttribute } from '../../lib/types/saleor';
-import { isColorAttribute, displayAttributeName } from '../../lib/utils/attributes';
+import { isColorAttribute, isHexColor, displayAttributeName } from '../../lib/utils/attributes';
 import { normalizeDigits } from '../../lib/utils/formatPrice';
 
 // Builds the attribute URL param value. The backend filter matches by value slug.
@@ -84,6 +84,10 @@ const EXCLUDED_ATTRIBUTE_NAMES = new Set([
 ]);
 
 function isExcludedAttribute(attr: FilterProductAttribute): boolean {
+    // Explicit exception: Bag Color is managed as a normal filter (user request),
+    // even though its slug contains "color". Value rendering stays checkbox-based.
+    const rawSlug = attr.attribute.slug?.toLowerCase() || '';
+    if (rawSlug === 'bag-color' || rawSlug === 'bag_color') return false;
     // Color attributes store hex codes as value names —
     // they render as swatches, not as filter checkboxes.
     if (isColorAttribute(attr.attribute)) return true;
@@ -174,7 +178,8 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
         for (const slug of usedSlugs) {
             const def = definitions.get(slug);
             if (!def) continue;
-            if (def.filterableInStorefront === false) continue;
+            const isBagColor = slug === 'bag-color' || slug === 'bag_color';
+            if (def.filterableInStorefront === false && !isBagColor) continue;
             const label = def.translation?.name || def.name;
             const values = new Map<string, string>();
             for (const choice of def.choices || []) {
@@ -192,8 +197,9 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 if (isExcludedAttribute(attr)) continue;
                 const slug = attr.attribute.slug;
                 if (!slug) continue;
-                // Respect the Dashboard "Filterable in storefront" toggle
-                if (definitions.get(slug)?.filterableInStorefront === false) continue;
+                // Respect the Dashboard "Filterable in storefront" toggle — except Bag Color (explicit user request).
+                const isBagColorMerge = slug === 'bag-color' || slug === 'bag_color';
+                if (definitions.get(slug)?.filterableInStorefront === false && !isBagColorMerge) continue;
 
                 // Attribute group name — prefer Saleor translation, fallback to original name
                 const attrName = attr.attribute.translation?.name || attr.attribute.name;
@@ -207,14 +213,28 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 }
 
                 // Collect each value (slug -> display label). Prefer Saleor translation.
+                // For color attributes the Saleor plain-text value may be comma-separated
+                // ("#000000, #0000FF" in one field) — expand to individual hex swatches.
+                const isColor = isColorAttribute(attr.attribute);
                 for (const val of attr.values) {
-                    const valueSlug = val.slug || val.name;
-                    if (!valueSlug) continue;
-                    const valueLabel = val.translation?.name || val.name;
-                    if (!group.values.has(valueSlug)) {
-                        group.values.set(valueSlug, valueLabel);
-                    } else if (group.values.get(valueSlug) === val.name && val.translation?.name) {
-                        group.values.set(valueSlug, val.translation.name);
+                    const rawNames = isColor
+                        ? (val.name || '').split(',').map(s => s.trim()).filter(Boolean)
+                        : [val.name || ''];
+                    const rawLabels = isColor
+                        ? (val.translation?.name || val.name || '').split(',').map(s => s.trim()).filter(Boolean)
+                        : [val.translation?.name || val.name];
+                    for (let i = 0; i < rawNames.length; i++) {
+                        const namePart = rawNames[i];
+                        const labelPart = rawLabels[i] || namePart;
+                        // For colors use the hex itself as the key so the filter URL is readable
+                        // ("attribute:bag-color:#000000") and matching works on split values.
+                        const valueSlug = isColor ? namePart : (val.slug || namePart);
+                        if (!valueSlug) continue;
+                        if (!group.values.has(valueSlug)) {
+                            group.values.set(valueSlug, labelPart);
+                        } else if (group.values.get(valueSlug) === namePart && val.translation?.name) {
+                            group.values.set(valueSlug, labelPart);
+                        }
                     }
                 }
             }
@@ -345,18 +365,6 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         </button>
                         {expandedSections.category !== false && (
                             <div className="space-y-3">
-                                <label className="flex items-center gap-3 cursor-pointer group">
-                                    <input
-                                        type="radio"
-                                        name="filter-category"
-                                        checked={!selectedCategory}
-                                        onChange={() => selectCategory('')}
-                                        className="w-4 h-4 border-gray-300 text-accent focus:ring-accent"
-                                    />
-                                    <span className="text-gray-600 group-hover:text-accent transition-colors">
-                                        {t.filters.allCategories}
-                                    </span>
-                                </label>
                                 {categoryOptions.map((cat) => (
                                     <label key={cat.slug} className="flex items-center gap-3 cursor-pointer group">
                                         <input
@@ -449,26 +457,52 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                 <span className="font-semibold text-gray-800">{group.label}</span>
                                 <svg className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                             </button>
-                            {expanded && (
-                                <div className="space-y-3">
-                                    {group.values.map((item) => {
-                                        const value = attributeParam(group.attributeSlug, item.value);
-                                        return (
-                                            <label key={item.value} className="flex items-center gap-3 cursor-pointer group">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked('attributes', value)}
-                                                    onChange={(e) => updateFilter('attributes', value, e.target.checked)}
-                                                    className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
-                                                />
-                                                <span className="text-gray-600 group-hover:text-accent transition-colors">
-                                                    {item.label}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            )}
+                            {expanded && (() => {
+                                const isSwatch = isColorAttribute({ slug: group.attributeSlug, name: group.label }) && group.values.length > 0 && group.values.every(v => isHexColor(v.value) || isHexColor(v.label));
+                                if (isSwatch) {
+                                    return (
+                                        <div className="flex flex-wrap gap-3">
+                                            {group.values.map((item) => {
+                                                const value = attributeParam(group.attributeSlug, item.value);
+                                                const checked = isChecked('attributes', value);
+                                                const hex = isHexColor(item.value) ? item.value : item.label;
+                                                return (
+                                                    <button
+                                                        key={item.value}
+                                                        type="button"
+                                                        onClick={() => updateFilter('attributes', value, !checked)}
+                                                        title={hex}
+                                                        aria-label={hex}
+                                                        aria-pressed={checked}
+                                                        className={`w-8 h-8 rounded-full border-2 transition-all ${checked ? 'border-accent scale-110' : 'border-transparent'}`}
+                                                        style={{ backgroundColor: hex, boxShadow: '0 0 0 1px #e5e5e5' }}
+                                                    />
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="space-y-3">
+                                        {group.values.map((item) => {
+                                            const value = attributeParam(group.attributeSlug, item.value);
+                                            return (
+                                                <label key={item.value} className="flex items-center gap-3 cursor-pointer group">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked('attributes', value)}
+                                                        onChange={(e) => updateFilter('attributes', value, e.target.checked)}
+                                                        className="w-4 h-4 border-gray-300 rounded text-accent focus:ring-accent"
+                                                    />
+                                                    <span className="text-gray-600 group-hover:text-accent transition-colors">
+                                                        {item.label}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     );
                 })}

@@ -91,6 +91,15 @@ export const translations = {
                 sub: 'من نسيج الأرض.. إلى الإنسان',
             },
             copyright: '© SMLH 2026. جميع الحقوق محفوظة',
+            newsletter: {
+                title: 'النشرة البريدية',
+                subtitle: 'اشترك ليصلك جديد القطع والعروض الخاصة',
+                placeholder: 'بريدك الإلكتروني',
+                button: 'اشتراك',
+                success: 'تم الاشتراك بنجاح! أهلاً بك في عائلة شملة.',
+                invalid: 'يرجى إدخال بريد إلكتروني صحيح',
+                error: 'تعذر الاشتراك حالياً، حاول لاحقاً',
+            },
         },
         home: {
             heroTitle: 'ننسج الذاكرة بهدوء',
@@ -494,6 +503,15 @@ export const translations = {
                 sub: 'From the Fabric of the Land... to Humanity',
             },
             copyright: '© SMLH 2026. All rights reserved',
+            newsletter: {
+                title: 'Newsletter',
+                subtitle: 'Subscribe for new pieces and exclusive offers',
+                placeholder: 'Your email address',
+                button: 'Subscribe',
+                success: 'Subscribed successfully! Welcome to the SHMLH family.',
+                invalid: 'Please enter a valid email address',
+                error: 'Could not subscribe right now, please try later',
+            },
         },
         home: {
             heroTitle: 'We Weave Memory with Grace',

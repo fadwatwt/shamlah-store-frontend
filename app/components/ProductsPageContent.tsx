@@ -94,10 +94,11 @@ function filterProducts(products: Product[], searchParams: ReturnType<typeof use
                     const groupSlug = group.attribute.slug?.toLowerCase()
                         ?? group.attribute.name.toLowerCase().replace(/\s+/g, '-');
                     if (groupSlug !== slug) return false;
-                    return group.values.some(v =>
-                        values.includes(v.name.toLowerCase()) ||
-                        (v.slug ? values.includes(v.slug.toLowerCase()) : false)
-                    );
+                    return group.values.some(v => {
+                        const names = (v.name || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+                        const slugs = v.slug ? [v.slug.toLowerCase()] : [];
+                        return names.some(n => values.includes(n)) || slugs.some(s => values.includes(s));
+                    });
                 });
             });
         });
