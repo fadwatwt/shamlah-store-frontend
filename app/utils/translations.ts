@@ -118,6 +118,8 @@ export const translations = {
             newCollection: 'المجموعة الجديدة',
             newCollectionSub: 'اكتشف أحدث إبداعاتنا المستوحاة من التراث الفلسطيني',
             exploreMore: 'استكشف المزيد',
+            exploreCollection: 'اكتشفي المجموعة',
+            collectionsIntro: 'عوالم وقصص من شملة — كل مجموعة فكرة تُروى بالخيط والطين واللون',
             shopByCategory: 'تسوق حسب الفئة',
             browseCollections: 'تصفح مجموعاتنا المختارة',
             categories: {
@@ -530,6 +532,8 @@ export const translations = {
             newCollection: 'New Collection',
             newCollectionSub: 'Discover our latest creations inspired by Palestinian heritage',
             exploreMore: 'Explore More',
+            exploreCollection: 'Explore the Collection',
+            collectionsIntro: 'Worlds and stories from SHMLH — each collection is an idea told in thread, clay and color',
             shopByCategory: 'Shop by Category',
             browseCollections: 'Browse our curated collections',
             categories: {

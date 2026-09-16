@@ -24,15 +24,11 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
         return editorJsToText(collection.description);
     };
 
-    const getPreviewImages = (collection: Collection): string[] => {
-        const products = collection.products?.edges || [];
-        return products
-            .slice(0, 4)
-            .map(e => e.node.thumbnail?.url || e.node.images?.[0]?.url || '')
-            .filter(Boolean);
-    };
+    // Editorial rule: a collection without a hero image is hidden from the
+    // listing instead of being patched with product thumbnails.
+    const editorialCollections = collections.filter((c) => Boolean(c.backgroundImage?.url));
 
-    if (collections.length === 0) {
+    if (editorialCollections.length === 0) {
         return (
             <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
                 <div className="container mx-auto">
@@ -54,89 +50,65 @@ export default function CollectionsContent({ collections }: CollectionsContentPr
 
     return (
         <main className="pt-28 md:pt-32 pb-12 md:pb-24 px-6 min-h-screen md:px-24" dir={dir}>
-            <div className="container mx-auto">
-                <div className="text-center mb-8 md:mb-16">
+            <div className="container mx-auto max-w-5xl">
+                <div className="text-center mb-10 md:mb-16">
                     <div className="text-accent mb-4">
                         <svg className="w-8 h-8 mx-auto" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M12 2L14.4 7.2L20 8.4L16 12.6L16.8 18.4L12 16L7.2 18.4L8 12.6L4 8.4L9.6 7.2L12 2Z" />
                         </svg>
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold font-serif text-accent mb-4">{t.nav.collections}</h1>
-                    <p className="text-gray-600 text-base">
-                        {t.home.newCollectionSub}
+                    <p className="text-gray-600 text-base max-w-2xl mx-auto">
+                        {(t.home as any).collectionsIntro || (t.home as any).newCollectionSub}
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {collections.map((collection) => {
+                <div className="flex flex-col gap-10 md:gap-14">
+                    {editorialCollections.map((collection) => {
                         const name = getCollectionName(collection);
                         const description = getCollectionDescription(collection);
-                        const previewImages = getPreviewImages(collection);
-                        const bgImage = collection.backgroundImage?.url;
+                        const bgImage = collection.backgroundImage?.url as string;
 
                         return (
-                            <Link
+                            <article
                                 key={collection.id}
-                                href={`/collections/${collection.slug}`}
-                                className="group block"
+                                className="group"
                             >
-                                <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3]">
-                                    {/* Background Image or Preview Grid */}
-                                    {bgImage ? (
-                                        <Image
-                                            src={bgImage}
-                                            alt={collection.backgroundImage?.alt || name}
-                                            fill
-                                            sizes="(max-width: 768px) 100vw, 50vw"
-                                            className="object-cover group-hover:scale-105 smooth-transition"
-                                            unoptimized
-                                        />
-                                    ) : previewImages.length > 0 ? (
-                                        <div className="grid grid-cols-2 gap-1 h-full">
-                                            {previewImages.slice(0, 4).map((img, idx) => (
-                                                <div key={idx} className="relative overflow-hidden">
-                                                    <Image
-                                                        src={img}
-                                                        alt={name}
-                                                        width={400}
-                                                        height={300}
-                                                        className="w-full h-full object-cover group-hover:scale-105 smooth-transition"
-                                                        unoptimized
-                                                    />
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary to-gray-200">
-                                            <svg className="w-16 h-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                            </svg>
-                                        </div>
-                                    )}
+                                <Link
+                                    href={`/collections/${collection.slug}`}
+                                    className="relative block overflow-hidden rounded-lg bg-gray-100 aspect-[16/9] md:h-[420px] md:aspect-auto"
+                                    aria-label={name}
+                                >
+                                    <Image
+                                        src={bgImage}
+                                        alt={collection.backgroundImage?.alt || name}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 900px"
+                                        className="object-cover group-hover:scale-[1.03] smooth-transition"
+                                        unoptimized
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                                </Link>
 
-                                    {/* Overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-                                    {/* Content */}
-                                    <div className="absolute bottom-0 start-0 end-0 p-6 md:p-8">
-                                        <h2 className="text-2xl md:text-3xl font-bold font-serif text-white mb-2 group-hover:text-accent smooth-transition">
+                                <div className="pt-5 md:pt-6 text-center max-w-2xl mx-auto">
+                                    <h2 className="text-2xl md:text-3xl font-bold font-serif text-gray-900 mb-2">
+                                        <Link href={`/collections/${collection.slug}`} className="hover:text-accent smooth-transition">
                                             {name}
-                                        </h2>
-                                        {description && (
-                                            <p className="text-white/80 text-sm md:text-base line-clamp-2 mb-3">
-                                                {description}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-2 text-white/60 text-sm">
-                                            <span>{collection.products?.edges?.length || 0}</span>
-                                            <span>{language === 'ar' ? 'منتج' : 'products'}</span>
-                                            <svg className="w-4 h-4 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 smooth-transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </div>
-                                    </div>
+                                        </Link>
+                                    </h2>
+                                    {description && (
+                                        <p className="text-gray-600 text-sm md:text-base leading-relaxed line-clamp-2 mb-5">
+                                            {description}
+                                        </p>
+                                    )}
+                                    <Link
+                                        href={`/collections/${collection.slug}`}
+                                        className="inline-block border-2 border-accent text-accent px-10 py-2.5 text-sm font-semibold smooth-transition hover:bg-accent hover:text-white"
+                                    >
+                                        {(t.home as any).exploreCollection}
+                                    </Link>
                                 </div>
-                            </Link>
+                            </article>
                         );
                     })}
                 </div>

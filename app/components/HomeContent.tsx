@@ -6,6 +6,7 @@ import CategoryCardImage from './CategoryCardImage';
 import ProductCard, { ProductCardProps } from './ProductCard';
 import { useLanguage } from '../context/LanguageContext';
 import { Category, Collection } from '../../lib/types/saleor';
+import { editorJsToText } from '../../lib/utils/editorjs';
 
 interface HomeContentProps {
     bestSellers: ProductCardProps[];
@@ -15,6 +16,13 @@ interface HomeContentProps {
 
 export default function HomeContent({ bestSellers, categories: saleorCategories, latestCollections = [] }: HomeContentProps) {
     const { t, dir, language } = useLanguage();
+
+    const getCollectionStory = (collection: Collection) => {
+        const raw = language === 'ar' && collection.translation?.description
+            ? collection.translation.description
+            : collection.description;
+        return editorJsToText(raw);
+    };
 
     // Local fallback images verified to match their category.
     // (Only bags has one — other categories use their real product photos below.)
@@ -257,6 +265,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                                             <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
                                                 <span className="text-sm tracking-wider text-white/80 uppercase">{language === 'ar' ? 'مجموعة' : 'Collection'}</span>
                                                 <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                                {getCollectionStory(collection) && (
+                                                    <p className="text-white/75 text-sm mt-1 line-clamp-2 max-w-md mx-auto">{getCollectionStory(collection)}</p>
+                                                )}
                                             </div>
                                         </Link>
                                     );
@@ -283,6 +294,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                                             <div className="absolute bottom-0 left-0 right-0 p-6">
                                                 <span className="text-sm tracking-wider text-white/80 uppercase">{language === 'ar' ? 'مجموعة' : 'Collection'}</span>
                                                 <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                                {getCollectionStory(collection) && (
+                                                    <p className="text-white/75 text-sm mt-1 line-clamp-2">{getCollectionStory(collection)}</p>
+                                                )}
                                             </div>
                                         </Link>
                                     );
@@ -325,6 +339,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                                                     {language === 'ar' ? 'مجموعة' : 'Collection'}
                                                 </span>
                                                 <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                                {getCollectionStory(collection) && (
+                                                    <p className="text-white/75 text-sm mt-1 line-clamp-2">{getCollectionStory(collection)}</p>
+                                                )}
                                             </div>
                                         </Link>
                                     );
@@ -362,6 +379,9 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                                                     {language === 'ar' ? 'مجموعة' : 'Collection'}
                                                 </span>
                                                 <h3 className="text-2xl font-serif text-white">{colName}</h3>
+                                                {getCollectionStory(collection) && (
+                                                    <p className="text-white/75 text-sm mt-1 line-clamp-2">{getCollectionStory(collection)}</p>
+                                                )}
                                             </div>
                                         </Link>
                                     );
