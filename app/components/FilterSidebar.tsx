@@ -149,6 +149,11 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             .map(c => ({ slug: c.slug, label: c.label, count: counts.get(c.slug.toLowerCase()) || 0 }));
     }, [categories, products, hasCategoryStep]);
 
+    // Category-first mode: until a valid category is picked, only the Category
+    // step is shown — Availability/Price/attributes appear after the choice,
+    // scoped to that category's products.
+    const isCategoryChosen = !hasCategoryStep
+        || categoryOptions.some((c) => c.slug.toLowerCase() === selectedCategory.toLowerCase());
     // Build filter groups dynamically from Saleor attribute definitions + products.
     // - Attribute definitions (attributeOptions) provide EVERY predefined value + translation.
     // - Products contribute any extra values (e.g. free-text attributes with no choices).
@@ -240,13 +245,24 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             }
         }
 
+        // Display order: Bag Type ("نوع الحقيبة") first, everything else keeps
+        // its natural order. Attributes only appear when used by the listed
+        // products, so this only affects categories that actually have it.
+        const PRIORITY_SLUGS = ['bag-type'];
         return Array.from(attrGroups.values()).map(g => ({
             attributeSlug: g.attributeSlug,
             // Display-only: hide the organizational prefix ("Bag Carry" -> "Carry").
             // Slugs are untouched, so filtering keeps working.
             label: displayAttributeName({ name: g.label, slug: g.attributeSlug }),
             values: Array.from(g.values.entries()).map(([value, label]) => ({ value, label })),
-        }));
+        })).sort((a, b) => {
+            const pa = PRIORITY_SLUGS.indexOf(a.attributeSlug);
+            const pb = PRIORITY_SLUGS.indexOf(b.attributeSlug);
+            if (pa === -1 && pb === -1) return 0;
+            if (pa === -1) return 1;
+            if (pb === -1) return -1;
+            return pa - pb;
+        });
     }, [scopedProducts, attributeOptions]);
 
     const initialExpanded: Record<string, boolean> = {
@@ -380,12 +396,19 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                                         <span className="text-xs text-gray-400">{cat.count}</span>
                                     </label>
                                 ))}
+                                {!isCategoryChosen && (
+                                    <p className="text-xs text-gray-400 pt-1">
+                                        {language === 'ar' ? 'اختر فئة لعرض الفلاتر الخاصة بها' : 'Select a category to see its filters'}
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Availability Filter */}
+                {/* Availability Filter — only after a category is chosen (category-first mode) */}
+                {isCategoryChosen && (
+                <>
                 <div className="border-b border-gray-100 pb-6">
                     <button onClick={() => toggleSection('availability')} className="flex items-center justify-between w-full mb-4 group">
                         <span className="font-semibold text-gray-800">{t.filters.availability}</span>
@@ -506,6 +529,8 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         </div>
                     );
                 })}
+                </>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-4">

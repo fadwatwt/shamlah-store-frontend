@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { ProductVariant } from '../../lib/types/saleor';
 import { formatPrice, getCurrencyForChannel, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
+import { copyTextToClipboard } from '@/lib/utils/copyText';
+import CopyToast from './CopyToast';
 import { extractHexColors, isHandmadeProduct } from '@/lib/utils/attributes';
 
 export interface ProductCardProps {
@@ -47,6 +49,20 @@ export default function ProductCard({
     const { addToCart } = useCart();
 
     const [addingToCart, setAddingToCart] = useState(false);
+    const [copyStatus, setCopyStatus] = useState<'ok' | 'fail' | null>(null);
+    const copyTimer = useRef<number | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (copyTimer.current) window.clearTimeout(copyTimer.current);
+        };
+    }, []);
+
+    const flashCopyResult = (ok: boolean) => {
+        setCopyStatus(ok ? 'ok' : 'fail');
+        if (copyTimer.current) window.clearTimeout(copyTimer.current);
+        copyTimer.current = window.setTimeout(() => setCopyStatus(null), 2500);
+    };
 
     const productColors = useMemo(() => extractHexColors(attributes).map(c => c.hex), [attributes]);
 
@@ -158,7 +174,7 @@ export default function ProductCard({
                                 variants
                             });
                         }}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center smooth-transition shadow-sm ${isInWishlist(id) ? 'bg-accent/10' : 'bg-white hover:bg-gray-100'}`}
+                        className="w-8 h-8 rounded-full flex items-center justify-center smooth-transition shadow-sm cursor-pointer bg-secondary hover:bg-[#EAE4DB]"
                         aria-label="Add to wishlist"
                     >
                         <svg className={`w-5 h-5 ${isInWishlist(id) ? 'text-accent fill-accent' : 'text-gray-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,23 +184,12 @@ export default function ProductCard({
                     <button
                         onClick={async (e) => {
                             e.preventDefault();
-                            if (navigator.share) {
-                                try {
-                                    await navigator.share({
-                                        title: name,
-                                        text: `Check out ${name} on SHMLH`,
-                                        url: `${window.location.origin}/products/${id}`,
-                                    });
-                                } catch (error) {
-                                    console.error('Error sharing:', error);
-                                }
-                            } else {
-                                // Fallback: Copy to clipboard
-                                navigator.clipboard.writeText(`${window.location.origin}/products/${id}`);
-                                alert(language === 'ar' ? 'تم نسخ الرابط' : 'Link copied to clipboard');
-                            }
+                            // Always copy the link in-page: navigator.share() opens an
+                            // OS-owned sheet whose "Copy link" option varies per device.
+                            const ok = await copyTextToClipboard(`${window.location.origin}/products/${id}`);
+                            flashCopyResult(ok);
                         }}
-                        className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 smooth-transition shadow-sm"
+                        className="w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 smooth-transition shadow-sm cursor-pointer"
                         aria-label="Share"
                     >
                         <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -195,7 +200,7 @@ export default function ProductCard({
                     <button
                         onClick={handleAddToCart}
                         disabled={addingToCart || quantityAvailable <= 0}
-                        className={`w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 smooth-transition shadow-sm ${addingToCart ? 'opacity-75 cursor-not-allowed' : ''}`}
+                        className={`w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 smooth-transition shadow-sm cursor-pointer disabled:cursor-not-allowed ${addingToCart ? 'opacity-75 cursor-not-allowed' : ''}`}
                         aria-label="Add to cart"
                     >
                         {addingToCart ? (
@@ -257,6 +262,7 @@ export default function ProductCard({
                     )}
                 </div>
             </Link>
+            <CopyToast status={copyStatus} language={language} />
         </div>
     );
 }

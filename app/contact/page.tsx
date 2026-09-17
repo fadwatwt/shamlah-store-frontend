@@ -1,16 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
-
-const TatreezIcon = () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-accent">
-        <path d="M14 2L15.5 8.5L21 4L18.5 10L26 12L19.5 14.5L26 17L18.5 19L21 25L15.5 20.5L14 27L12.5 20.5L7 25L9.5 19L2 17L8.5 14.5L2 12L9.5 10L7 4L12.5 8.5L14 2Z" fill="currentColor" opacity="0.9" />
-        <circle cx="14" cy="14" r="3" fill="white" />
-        <circle cx="14" cy="14" r="1.5" fill="currentColor" />
-    </svg>
-);
 
 const WhatsAppIcon = () => (
     <svg className="w-4 h-4 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -76,7 +69,7 @@ export default function ContactPage() {
             {/* Hero Section */}
             <section className="text-center px-4 py-10 md:py-14 lg:py-16 bg-[#FDFBF7]">
                 <div className="flex justify-center mb-4">
-                    <div className="w-2 h-2 bg-[#E8D5C4] rotate-0"></div>
+                    <Image src="/image.png" alt="" width={28} height={28} className="object-contain" />
                 </div>
                 <h1 className="text-[28px] md:text-4xl lg:text-5xl font-serif text-accent mb-3 tracking-wide">
                     {cp.hero.title}
@@ -92,7 +85,7 @@ export default function ContactPage() {
                     {/* Form Card */}
                     <div className="bg-white p-6 md:p-8 lg:p-8 shadow-sm border border-gray-100">
                         <div className="flex items-center gap-3 mb-6 md:mb-8">
-                            <TatreezIcon />
+                            <Image src="/image.png" alt="" width={28} height={28} className="object-contain shrink-0" />
                             <h2 className="text-lg md:text-xl font-serif text-accent">
                                 {cp.form.title}
                             </h2>

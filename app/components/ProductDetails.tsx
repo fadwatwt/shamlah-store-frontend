@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -12,6 +12,8 @@ import { getProductsByCategory } from '@/lib/queries/products';
 import { getCookieChannel } from '@/lib/saleor/channel-mapping';
 import { extractHexColors, isColorAttribute, isHandmadeProduct, isHexColor, displayAttributeName } from '@/lib/utils/attributes';
 import { formatPrice, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
+import { copyTextToClipboard } from '@/lib/utils/copyText';
+import CopyToast from './CopyToast';
 import { LoadingSpinner } from './LoadingSpinner';
 import ProductCard from './ProductCard';
 
@@ -194,21 +196,21 @@ export default function ProductDetails({ product, price, currency, images, sizes
     }, [productColors]);
 
     const handleShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: product.name,
-                    text: `Check out ${product.name} on SHMLH`,
-                    url: window.location.href,
-                });
-            } catch (error) {
-                console.error('Error sharing:', error);
-            }
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert(language === 'ar' ? 'تم نسخ الرابط' : 'Link copied');
-        }
+        // Always copy the link in-page: navigator.share() opens an
+        // OS-owned sheet whose "Copy link" option varies per device.
+        const ok = await copyTextToClipboard(window.location.href);
+        setCopyStatus(ok ? 'ok' : 'fail');
+        if (copyTimer.current) window.clearTimeout(copyTimer.current);
+        copyTimer.current = window.setTimeout(() => setCopyStatus(null), 2500);
     };
+
+    const [copyStatus, setCopyStatus] = useState<'ok' | 'fail' | null>(null);
+    const copyTimer = useRef<number | null>(null);
+    useEffect(() => {
+        return () => {
+            if (copyTimer.current) window.clearTimeout(copyTimer.current);
+        };
+    }, []);
 
     const toggleTab = (tab: string) => {
         setActiveTab(activeTab === tab ? null : tab);
@@ -557,6 +559,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 </button>
+                                <CopyToast status={copyStatus} language={language} />
                             </div>
                         </div>
 
