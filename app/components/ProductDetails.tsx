@@ -206,6 +206,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
 
     const [copyStatus, setCopyStatus] = useState<'ok' | 'fail' | null>(null);
     const copyTimer = useRef<number | null>(null);
+    const shareButtonRef = useRef<HTMLButtonElement>(null);
     useEffect(() => {
         return () => {
             if (copyTimer.current) window.clearTimeout(copyTimer.current);
@@ -553,13 +554,14 @@ export default function ProductDetails({ product, price, currency, images, sizes
                                     <svg className="w-6 h-6" fill={isInWishlist(product.id) ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
                                 </button>
                                 <button
+                                    ref={shareButtonRef}
                                     onClick={handleShare}
                                     aria-label={language === 'ar' ? 'مشاركة' : 'Share'}
                                     className="text-gray-400 hover:text-accent transition-colors"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 8l-4-4m0 0L8 8m4-4v12" /></svg>
                                 </button>
-                                <CopyToast status={copyStatus} language={language} />
+                                <CopyToast status={copyStatus} language={language} targetRef={shareButtonRef} />
                             </div>
                         </div>
 

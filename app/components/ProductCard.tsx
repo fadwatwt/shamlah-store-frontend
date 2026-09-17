@@ -51,6 +51,7 @@ export default function ProductCard({
     const [addingToCart, setAddingToCart] = useState(false);
     const [copyStatus, setCopyStatus] = useState<'ok' | 'fail' | null>(null);
     const copyTimer = useRef<number | null>(null);
+    const shareButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         return () => {
@@ -181,8 +182,9 @@ export default function ProductCard({
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                         </svg>
                     </button>
-                    <button
-                        onClick={async (e) => {
+<button
+                            ref={shareButtonRef}
+                            onClick={async (e) => {
                             e.preventDefault();
                             // Always copy the link in-page: navigator.share() opens an
                             // OS-owned sheet whose "Copy link" option varies per device.
@@ -262,7 +264,7 @@ export default function ProductCard({
                     )}
                 </div>
             </Link>
-            <CopyToast status={copyStatus} language={language} />
+            <CopyToast status={copyStatus} language={language} targetRef={shareButtonRef} />
         </div>
     );
 }
