@@ -110,7 +110,7 @@ export default function CartPage() {
                         ) : (
                             <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
                                 <p className="text-gray-500 mb-4">{t.cart.empty}</p>
-                                <Link href="/collections" className="text-accent underline hover:text-[#500000]">
+                                <Link href="/products" className="text-accent underline hover:text-[#500000]">
                                     {t.cart.browse}
                                 </Link>
                             </div>
@@ -152,7 +152,7 @@ export default function CartPage() {
                                     {t.cart.checkout}
                                 </Link>
                                 <Link
-                                    href="/collections"
+                                    href="/products"
                                     className="block w-full text-center bg-transparent border-2 border-gray-300 text-gray-600 py-3.5 rounded-lg font-bold hover:border-gray-400 hover:text-gray-800 smooth-transition"
                                 >
                                     {t.cart.continue}

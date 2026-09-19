@@ -130,7 +130,7 @@ export const ACCOUNT_UPDATE = gql`
   mutation AccountUpdate($input: AccountInput!) {
     accountUpdate(input: $input) {
       errors { field message code }
-      user { id firstName lastName }
+      user { id firstName lastName email }
     }
   }
 `;
@@ -150,6 +150,25 @@ export const ACCOUNT_SET_DEFAULT_ADDRESS = gql`
     accountSetDefaultAddress(id: $id, type: $type) {
       errors { field message code }
       user { id }
+    }
+  }
+`;
+
+export const ACCOUNT_ADDRESS_UPDATE = gql`
+  mutation AccountAddressUpdate($id: ID!, $input: AddressInput!) {
+    accountAddressUpdate(id: $id, input: $input) {
+      errors { field message code }
+      address { id streetAddress1 streetAddress2 city postalCode country { code country } phone }
+      user { id }
+    }
+  }
+`;
+
+export const PASSWORD_CHANGE = gql`
+  mutation PasswordChange($oldPassword: String!, $newPassword: String!) {
+    passwordChange(oldPassword: $oldPassword, newPassword: $newPassword) {
+      errors { field message code }
+      user { id email }
     }
   }
 `;
@@ -234,7 +253,7 @@ export async function registerAccount(input: RegisterInput) {
   return requestAuth<RegisterResponse>(ACCOUNT_REGISTER, { input: saleorInput });
 }
 
-export async function updateAccount(token: string, input: { firstName?: string; lastName?: string }) {
+export async function updateAccount(token: string, input: { firstName?: string; lastName?: string; email?: string; password?: string }) {
   return requestAuth<any>(ACCOUNT_UPDATE, { input }, { Authorization: `Bearer ${token}` });
 }
 
@@ -244,6 +263,14 @@ export async function createAccountAddress(token: string, input: any) {
 
 export async function setDefaultAddress(token: string, id: string, type: 'SHIPPING' | 'BILLING') {
   return requestAuth<any>(ACCOUNT_SET_DEFAULT_ADDRESS, { id, type }, { Authorization: `Bearer ${token}` });
+}
+
+export async function updateAccountAddress(token: string, id: string, input: any) {
+  return requestAuth<any>(ACCOUNT_ADDRESS_UPDATE, { id, input }, { Authorization: `Bearer ${token}` });
+}
+
+export async function changePassword(token: string, oldPassword: string, newPassword: string) {
+  return requestAuth<any>(PASSWORD_CHANGE, { oldPassword, newPassword }, { Authorization: `Bearer ${token}` });
 }
 
 export async function loginUser(email: string, password: string) {

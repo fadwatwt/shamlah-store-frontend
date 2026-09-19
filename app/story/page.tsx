@@ -91,48 +91,61 @@ export default function StoryPage() {
                     </div>
                 </section>
 
-                {/* Values/Features - Updated Design */}
+                {/* Values/Features - Figma Design */}
                 <section className="py-8 md:py-16 bg-white">
                     <div className="container-custom">
-                        <div className="text-center mb-8 md:mb-16">
-                            <h2 className="text-3xl md:text-4xl font-serif text-accent">{t.storyPage.values.title}</h2>
+                        <div className="w-full h-px bg-[#EDE3D3] mb-12 md:mb-16"></div>
+                        <div className="text-center mb-10 md:mb-14">
+                            <h2 className="text-3xl md:text-[32px] font-serif text-accent tracking-wide">{t.storyPage.values.title}</h2>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 text-center max-w-5xl mx-auto">
-                            {/* Authenticity */}
-                            <div className="flex flex-col items-center group p-6">
-                                <div className="w-12 h-12 mb-6 text-accent">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full opacity-90 group-hover:scale-110 transition-transform duration-300">
-                                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                                    </svg>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 text-center max-w-6xl mx-auto">
+                            {/* Authenticity — نفس أيقونة المتجر */}
+                            <div className="flex flex-col items-center">
+                                <div className="w-9 h-9 mb-5">
+                                    <Image
+                                        src="/image2.png"
+                                        alt=""
+                                        width={36}
+                                        height={36}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
-                                <h3 className="text-lg font-serif mb-4 text-gray-900">{t.storyPage.values.authenticity.title}</h3>
-                                <p className="text-gray-500 font-light text-sm leading-relaxed max-w-xs mx-auto">
+                                <h3 className="text-[17px] font-serif mb-4 text-[#1a1a1a]">{t.storyPage.values.authenticity.title}</h3>
+                                <p className="font-serif font-light text-[14.5px] leading-[1.9] text-[#333] max-w-[300px] mx-auto">
                                     {t.storyPage.values.authenticity.desc}
                                 </p>
                             </div>
 
-                            {/* Craftsmanship */}
-                            <div className="flex flex-col items-center group p-6 border-l border-r border-gray-100">
-                                <div className="w-12 h-12 mb-6 text-accent">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full opacity-90 group-hover:scale-110 transition-transform duration-300">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5l7-7-1.41-1.41L9 11.67l-2.59-2.58L5 10.5l4 4z" />
-                                    </svg>
+                            {/* Craftsmanship — شجرة بنفس ستايل التطريز */}
+                            <div className="flex flex-col items-center">
+                                <div className="w-9 h-9 mb-5">
+                                    <Image
+                                        src="/image4.png"
+                                        alt=""
+                                        width={36}
+                                        height={36}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
-                                <h3 className="text-lg font-serif mb-4 text-gray-900">{t.storyPage.values.craftsmanship.title}</h3>
-                                <p className="text-gray-500 font-light text-sm leading-relaxed max-w-xs mx-auto">
+                                <h3 className="text-[17px] font-serif mb-4 text-[#1a1a1a]">{t.storyPage.values.craftsmanship.title}</h3>
+                                <p className="font-serif font-light text-[14.5px] leading-[1.9] text-[#333] max-w-[300px] mx-auto">
                                     {t.storyPage.values.craftsmanship.desc}
                                 </p>
                             </div>
 
-                            {/* Luxury */}
-                            <div className="flex flex-col items-center group p-6">
-                                <div className="w-12 h-12 mb-6 text-accent">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full opacity-90 group-hover:scale-110 transition-transform duration-300">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM11 19.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-1.07 3.97-2.9 5.4z" />
-                                    </svg>
+                            {/* Luxury — نفس أيقونة المتجر */}
+                            <div className="flex flex-col items-center">
+                                <div className="w-9 h-9 mb-5">
+                                    <Image
+                                        src="/image.png"
+                                        alt=""
+                                        width={36}
+                                        height={36}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
-                                <h3 className="text-lg font-serif mb-4 text-gray-900">{t.storyPage.values.luxury.title}</h3>
-                                <p className="text-gray-500 font-light text-sm leading-relaxed max-w-xs mx-auto">
+                                <h3 className="text-[17px] font-serif mb-4 text-[#1a1a1a]">{t.storyPage.values.luxury.title}</h3>
+                                <p className="font-serif font-light text-[14.5px] leading-[1.9] text-[#333] max-w-[300px] mx-auto">
                                     {t.storyPage.values.luxury.desc}
                                 </p>
                             </div>

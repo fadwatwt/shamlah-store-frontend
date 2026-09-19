@@ -150,7 +150,7 @@ export default function ProductDetails({ product, price, currency, images, sizes
     const { t, dir, language } = useLanguage();
     const router = useRouter();
     const { toggleWishlist, isInWishlist } = useWishlist();
-    const { addToCart, loading: loadingCart } = useCart();
+    const { addToCart } = useCart();
     
     const notesAttr = attributes.find(a =>
         a.attribute.name.toLowerCase() === 'product notes' ||
@@ -164,25 +164,57 @@ export default function ProductDetails({ product, price, currency, images, sizes
     const [activeTab, setActiveTab] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState(images[0]);
     const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+    const [cartButton, setCartButton] = useState<'idle' | 'adding' | 'success' | 'error'>('idle');
+    const addingRef = useRef(false);
+    const cartButtonTimer = useRef<number | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (cartButtonTimer.current) window.clearTimeout(cartButtonTimer.current);
+        };
+    }, []);
 
     const handleAddToCart = async () => {
+        if (addingRef.current) return;
         if (!selectedVariantId) {
             alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
             return;
         }
-        await addToCart(selectedVariantId, quantity);
+        addingRef.current = true;
+        setCartButton('adding');
+        try {
+            await addToCart(selectedVariantId, quantity);
+            setCartButton('success');
+            if (cartButtonTimer.current) window.clearTimeout(cartButtonTimer.current);
+            cartButtonTimer.current = window.setTimeout(() => setCartButton('idle'), 2500);
+        } catch (err) {
+            console.error('Failed to add to cart', err);
+            setCartButton('error');
+            if (cartButtonTimer.current) window.clearTimeout(cartButtonTimer.current);
+            cartButtonTimer.current = window.setTimeout(() => setCartButton('idle'), 3000);
+        } finally {
+            addingRef.current = false;
+        }
     };
 
     const handleBuyNow = async () => {
+        if (addingRef.current) return;
         if (!selectedVariantId) {
             alert(language === 'ar' ? 'الرجاء اختيار الخيارات المطلوبة' : 'Please select options');
             return;
         }
+        addingRef.current = true;
+        setCartButton('adding');
         try {
             await addToCart(selectedVariantId, quantity);
             router.push('/checkout');
         } catch (err) {
             console.error('Buy Now failed', err);
+            setCartButton('error');
+            if (cartButtonTimer.current) window.clearTimeout(cartButtonTimer.current);
+            cartButtonTimer.current = window.setTimeout(() => setCartButton('idle'), 3000);
+        } finally {
+            addingRef.current = false;
         }
     };
 
@@ -696,22 +728,33 @@ export default function ProductDetails({ product, price, currency, images, sizes
                         <div className="space-y-4 mb-6 md:mb-12">
                             <button
                                 onClick={handleAddToCart}
-                                disabled={loadingCart}
-                                className="w-full bg-accent text-white py-4 rounded-sm font-bold text-lg hover:bg-accent/90 smooth-transition shadow-sm flex items-center justify-center gap-3 disabled:opacity-70"
+                                disabled={cartButton === 'adding'}
+                                className={`w-full py-4 rounded-sm font-bold text-lg smooth-transition flex items-center justify-center gap-3 disabled:opacity-70 ${cartButton === 'success'
+                                    ? 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
+                                    : cartButton === 'error'
+                                        ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm'
+                                        : 'bg-accent text-white hover:bg-accent/90 shadow-sm'
+                                    }`}
                             >
-                                {loadingCart ? (
+                                {cartButton === 'adding' ? (
                                     <>
                                         <LoadingSpinner size="sm" color="white" />
                                         <span>{language === 'ar' ? 'جاري الإضافة...' : 'Adding...'}</span>
                                     </>
-                                ) : t.product.addToCart}
+                                ) : cartButton === 'success' ? (
+                                    t.product.addedToCart
+                                ) : cartButton === 'error' ? (
+                                    t.product.addFailed
+                                ) : (
+                                    t.product.addToCart
+                                )}
                             </button>
                             <button
                                 onClick={handleBuyNow}
-                                disabled={loadingCart}
+                                disabled={cartButton === 'adding'}
                                 className="w-full bg-transparent border border-accent text-accent py-4 rounded-sm font-bold text-lg hover:bg-accent hover:text-white smooth-transition flex items-center justify-center gap-3 disabled:opacity-70"
                             >
-                                {loadingCart ? <LoadingSpinner size="sm" color="accent" /> : t.product.buyNow}
+                                {cartButton === 'adding' ? <LoadingSpinner size="sm" color="accent" /> : t.product.buyNow}
                             </button>
                         </div>
 

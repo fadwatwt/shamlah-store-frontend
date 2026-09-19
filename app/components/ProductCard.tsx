@@ -52,6 +52,7 @@ export default function ProductCard({
     const [copyStatus, setCopyStatus] = useState<'ok' | 'fail' | null>(null);
     const copyTimer = useRef<number | null>(null);
     const shareButtonRef = useRef<HTMLButtonElement>(null);
+    const addingRef = useRef(false);
 
     useEffect(() => {
         return () => {
@@ -79,13 +80,15 @@ export default function ProductCard({
         }
 
         if (variantIdToUse) {
+            if (addingRef.current) return;
+            addingRef.current = true;
             setAddingToCart(true);
             try {
                 await addToCart(variantIdToUse, 1);
-                alert(language === 'ar' ? 'تمت الإضافة إلى السلة' : 'Added to cart');
             } catch (err) {
                 console.error('Failed to add to cart', err);
             } finally {
+                addingRef.current = false;
                 setAddingToCart(false);
             }
         } else {

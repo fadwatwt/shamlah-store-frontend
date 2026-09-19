@@ -33,6 +33,9 @@ interface AuthContextType {
     loginWithGoogle: () => Promise<void>;
     handleGoogleCallback: (code: string, state: string) => Promise<{ success: boolean; error?: string }>;
     logout: () => void;
+    refreshUser: () => Promise<void>;
+    applyAccountPatch: (fields: Partial<User>) => void;
+    applyAddressPatch: (address: any) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -226,8 +229,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push('/login');
     };
 
+    const refreshUser = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        try {
+            const userData = await getCurrentUser(token);
+            if (userData?.me) setUser(userData.me);
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
+    };
+
+    // Apply partial account fields returned by accountUpdate — avoids a full refresh round-trip.
+    const applyAccountPatch = (fields: Partial<User>) => {
+        setUser(prev => (prev ? { ...prev, ...fields } : prev));
+    };
+
+    // Apply an address returned by accountAddressCreate/Update locally.
+    const applyAddressPatch = (address: any) => {
+        setUser(prev => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                defaultShippingAddress: address,
+                addresses: [address, ...((prev as any).addresses || []).filter((a: any) => a.id !== address.id)],
+            };
+        });
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, loginWithGoogle, handleGoogleCallback, logout }}>
+        <AuthContext.Provider value={{ user, loading, isAuthenticated: !!user, login, register, loginWithGoogle, handleGoogleCallback, logout, refreshUser, applyAccountPatch, applyAddressPatch }}>
             {children}
         </AuthContext.Provider>
     );

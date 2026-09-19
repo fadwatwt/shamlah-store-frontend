@@ -204,7 +204,7 @@ export default function SuccessPage() {
                             </Link>
                         )}
                         <Link
-                            href="/collections"
+                            href="/products"
                             className={`${isAuthenticated ? 'flex-1' : 'w-full'} bg-accent text-white py-4 font-bold rounded-lg hover:bg-[#500000] shadow-xl shadow-accent/20 transition-all`}
                         >
                             {t.checkout.success.continueShopping}

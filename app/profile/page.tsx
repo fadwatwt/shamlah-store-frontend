@@ -4,17 +4,199 @@ import Link from 'next/link';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
-import { getCurrentUserOrdersCount, getUserOrders } from '@/lib/queries/auth';
+import { getCurrentUserOrdersCount, getUserOrders, updateAccount, updateAccountAddress, createAccountAddress, setDefaultAddress, changePassword } from '@/lib/queries/auth';
+import { COUNTRY_CODES, DEFAULT_COUNTRY_CODE, isCountryCode, countryName } from '@/lib/utils/countries';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
     const { t, dir, language } = useLanguage();
-    const { user, loading, logout, isAuthenticated } = useAuth();
+    const { user, loading, logout, isAuthenticated, applyAccountPatch, applyAddressPatch } = useAuth();
     const { items: wishlistItems } = useWishlist();
     const router = useRouter();
     const [ordersCount, setOrdersCount] = useState<number | null>(null);
     const [orderAddress, setOrderAddress] = useState<any | null>(null);
+
+    // Edit modals state
+    const [editing, setEditing] = useState<'info' | 'address' | 'password' | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [formSuccess, setFormSuccess] = useState('');
+    const [infoForm, setInfoForm] = useState({ firstName: '', lastName: '' });
+    const [addressForm, setAddressForm] = useState({
+        streetAddress1: '',
+        streetAddress2: '',
+        city: '',
+        country: 'PS',
+        phone: '',
+    });
+    const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirm: '' });
+
+    const openInfoEditor = () => {
+        setInfoForm({
+            firstName: user?.firstName || '',
+            lastName: user?.lastName || '',
+        });
+        setFormError('');
+        setFormSuccess('');
+        setEditing('info');
+    };
+
+    const openAddressEditor = () => {
+        const a = displayAddress || {};
+        const rawCountry = a.country?.code || (typeof a.country === 'string' ? a.country : '') || DEFAULT_COUNTRY_CODE;
+        setAddressForm({
+            streetAddress1: a.streetAddress1 || '',
+            streetAddress2: a.streetAddress2 || '',
+            city: a.city || '',
+            country: isCountryCode(rawCountry) ? rawCountry : DEFAULT_COUNTRY_CODE,
+            phone: a.phone || (displayPhone as string) || '',
+        });
+        setFormError('');
+        setFormSuccess('');
+        setEditing('address');
+    };
+
+    const openPasswordEditor = () => {
+        setPasswordForm({ oldPassword: '', newPassword: '', confirm: '' });
+        setFormError('');
+        setFormSuccess('');
+        setEditing('password');
+    };
+
+    const saveInfo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!infoForm.firstName.trim() || !infoForm.lastName.trim()) {
+            setFormError(t.profile.requiredField);
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setSaving(true);
+        setFormError('');
+        try {
+            const accountInput: any = {
+                firstName: infoForm.firstName.trim(),
+                lastName: infoForm.lastName.trim(),
+            };
+            const res = await updateAccount(token, accountInput);
+            if (res?.accountUpdate?.errors?.length) {
+                setFormError(res.accountUpdate.errors[0].message || t.profile.saveError);
+                return;
+            }
+            if (res?.accountUpdate?.user) {
+                applyAccountPatch({
+                    firstName: res.accountUpdate.user.firstName,
+                    lastName: res.accountUpdate.user.lastName,
+                });
+            }
+            setEditing(null);
+        } catch (err: any) {
+            setFormError(err?.message || t.profile.saveError);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Backend validation errors come back raw in English — translate the known ones.
+    // Note: Saleor's address phone check returns NO field, only the message
+    // "This value is not valid for the address.", so match on both.
+    const addressErrorMessage = (err: any): string => {
+        const field = String(err?.field || '').toLowerCase();
+        const message = String(err?.message || '');
+        if (field.includes('phone') || message.toLowerCase().includes('not valid for the address')) {
+            return t.profile.invalidPhoneForCountry;
+        }
+        if (message.startsWith('Variable "')) return t.profile.saveError;
+        return message || t.profile.saveError;
+    };
+
+    const upsertAddressFields = async (token: string, fields: any) => {
+        const existingId = savedAddresses[0]?.id;
+        if (existingId) {
+            const res = await updateAccountAddress(token, existingId, fields);
+            if (res?.accountAddressUpdate?.errors?.length) {
+                const e = res.accountAddressUpdate.errors[0];
+                throw { field: e?.field, message: e?.message };
+            }
+            return res?.accountAddressUpdate?.address || null;
+        }
+        const res = await createAccountAddress(token, fields);
+        if (res?.accountAddressCreate?.errors?.length || !res?.accountAddressCreate?.address?.id) {
+            const e = res?.accountAddressCreate?.errors?.[0];
+            throw { field: e?.field, message: e?.message };
+        }
+        const newId = res.accountAddressCreate.address.id;
+        await Promise.all([
+            setDefaultAddress(token, newId, 'SHIPPING').catch(() => {}),
+            setDefaultAddress(token, newId, 'BILLING').catch(() => {}),
+        ]);
+        return res?.accountAddressCreate?.address || null;
+    };
+
+    const saveAddress = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!addressForm.streetAddress1.trim() || !addressForm.city.trim()) {
+            setFormError(t.profile.requiredField);
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setSaving(true);
+        setFormError('');
+        try {
+            const payload: any = {
+                firstName: user?.firstName || 'User',
+                lastName: user?.lastName || 'User',
+                streetAddress1: addressForm.streetAddress1.trim(),
+                city: addressForm.city.trim(),
+                country: (isCountryCode(addressForm.country.trim()) ? addressForm.country.trim() : DEFAULT_COUNTRY_CODE) as any,
+            };
+            if (addressForm.streetAddress2.trim()) payload.streetAddress2 = addressForm.streetAddress2.trim();
+            // NOTE: postalCode is intentionally NOT sent — this Saleor instance strips it server-side.
+            if (addressForm.phone.trim()) payload.phone = addressForm.phone.trim();
+
+            const saved = await upsertAddressFields(token, payload);
+            if (saved) applyAddressPatch(saved);
+            setEditing(null);
+        } catch (err: any) {
+            setFormError(addressErrorMessage(err));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const savePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!passwordForm.oldPassword || !passwordForm.newPassword) {
+            setFormError(t.profile.requiredField);
+            return;
+        }
+        if (passwordForm.newPassword.length < 8) {
+            setFormError(t.profile.passwordTooShort);
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirm) {
+            setFormError(t.profile.passwordMismatch);
+            return;
+        }
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        setSaving(true);
+        setFormError('');
+        try {
+            const res = await changePassword(token, passwordForm.oldPassword, passwordForm.newPassword);
+            if (res?.passwordChange?.errors?.length) {
+                setFormError(res.passwordChange.errors[0].message || t.profile.saveError);
+            } else {
+                setEditing(null);
+            }
+        } catch {
+            setFormError(t.profile.saveError);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -134,7 +316,7 @@ export default function ProfilePage() {
                                     </svg>
                                     <h2 className="text-xl font-serif text-gray-900">{t.profile.personalInfo}</h2>
                                 </div>
-                                <button className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
+                                <button onClick={openInfoEditor} className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
@@ -180,7 +362,7 @@ export default function ProfilePage() {
                                     </svg>
                                     <h2 className="text-xl font-serif text-gray-900">{t.profile.shippingAddress}</h2>
                                 </div>
-                                <button className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
+                                <button onClick={openAddressEditor} className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
@@ -198,11 +380,7 @@ export default function ProfilePage() {
                                         </div>
                                         <div>
                                             <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.country}</span>
-                                            <span className="font-serif text-sm text-gray-800">{displayAddress.country?.country || displayAddress.country}</span>
-                                        </div>
-                                        <div>
-                                            <span className="block text-xs text-gray-400 mb-2 font-serif">{t.profile.postalCode}</span>
-                                            <span className="font-english text-sm text-gray-800">{displayAddress.postalCode}</span>
+                                            <span className="font-serif text-sm text-gray-800">{displayAddress.country?.country || countryName(displayAddress.country || '', language)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -218,7 +396,7 @@ export default function ProfilePage() {
                         <div className="bg-white p-8 border border-gray-200">
                             <div className="flex justify-between items-center mb-2">
                                 <h2 className="text-xl font-serif text-gray-900">{t.profile.changePassword}</h2>
-                                <button className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
+                                <button onClick={openPasswordEditor} className="text-accent hover:opacity-80 flex items-center gap-2 text-xs font-serif italic">
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                     </svg>
@@ -262,6 +440,201 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modals */}
+            {editing && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+                    onClick={() => !saving && setEditing(null)}
+                >
+                    <div
+                        className="bg-white w-full max-w-md p-8 shadow-xl"
+                        dir={dir}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Personal Info */}
+                        {editing === 'info' && (
+                            <form onSubmit={saveInfo}>
+                                <h3 className="text-xl font-serif text-gray-900 mb-6">{t.profile.personalInfo}</h3>
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pe-1">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-gray-500 text-xs mb-2">{t.profile.firstName}</label>
+                                            <input
+                                                value={infoForm.firstName}
+                                                onChange={(e) => setInfoForm({ ...infoForm, firstName: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-500 text-xs mb-2">{t.profile.lastName}</label>
+                                            <input
+                                                value={infoForm.lastName}
+                                                onChange={(e) => setInfoForm({ ...infoForm, lastName: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.email}</label>
+                                        <div
+                                            dir="ltr"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm bg-gray-50 text-gray-500"
+                                            style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}
+                                        >
+                                            {user?.email || ''}
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1">{t.profile.emailNotEditable}</p>
+                                    </div>
+                                </div>
+                                {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="flex-1 bg-accent text-white py-3 text-sm font-bold rounded-sm hover:bg-[#5a1214] smooth-transition disabled:opacity-60"
+                                    >
+                                        {saving ? t.profile.saving : t.profile.save}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => setEditing(null)}
+                                        className="flex-1 border border-gray-300 text-gray-600 py-3 text-sm rounded-sm hover:bg-gray-50 smooth-transition"
+                                    >
+                                        {t.profile.cancel}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Shipping Address */}
+                        {editing === 'address' && (
+                            <form onSubmit={saveAddress}>
+                                <h3 className="text-xl font-serif text-gray-900 mb-6">{t.profile.shippingAddress}</h3>
+                                <div className="space-y-4 max-h-[60vh] overflow-y-auto pe-1">
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.streetAddress} *</label>
+                                        <input
+                                            value={addressForm.streetAddress1}
+                                            onChange={(e) => setAddressForm({ ...addressForm, streetAddress1: e.target.value })}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-gray-500 text-xs mb-2">{t.profile.city} *</label>
+                                            <input
+                                                value={addressForm.city}
+                                                onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-gray-500 text-xs mb-2">{t.profile.country}</label>
+                                            <select
+                                                value={addressForm.country}
+                                                onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })}
+                                                className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm bg-white focus:outline-none focus:border-accent"
+                                            >
+                                                {COUNTRY_CODES.map((c) => (
+                                                    <option key={c.code} value={c.code}>
+                                                        {language === 'ar' ? c.ar : c.en}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.phone}</label>
+                                        <input
+                                            value={addressForm.phone}
+                                            onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                                            dir="ltr"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+                                {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="flex-1 bg-accent text-white py-3 text-sm font-bold rounded-sm hover:bg-[#5a1214] smooth-transition disabled:opacity-60"
+                                    >
+                                        {saving ? t.profile.saving : t.profile.save}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => setEditing(null)}
+                                        className="flex-1 border border-gray-300 text-gray-600 py-3 text-sm rounded-sm hover:bg-gray-50 smooth-transition"
+                                    >
+                                        {t.profile.cancel}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Change Password */}
+                        {editing === 'password' && (
+                            <form onSubmit={savePassword}>
+                                <h3 className="text-xl font-serif text-gray-900 mb-6">{t.profile.changePassword}</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.oldPassword}</label>
+                                        <input
+                                            type="password"
+                                            value={passwordForm.oldPassword}
+                                            onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                                            dir="ltr"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.newPassword}</label>
+                                        <input
+                                            type="password"
+                                            value={passwordForm.newPassword}
+                                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                            dir="ltr"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-xs mb-2">{t.profile.confirmPassword}</label>
+                                        <input
+                                            type="password"
+                                            value={passwordForm.confirm}
+                                            onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                                            dir="ltr"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-accent"
+                                        />
+                                    </div>
+                                </div>
+                                {formError && <p className="mt-4 text-sm text-red-500">{formError}</p>}
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="flex-1 bg-accent text-white py-3 text-sm font-bold rounded-sm hover:bg-[#5a1214] smooth-transition disabled:opacity-60"
+                                    >
+                                        {saving ? t.profile.saving : t.profile.save}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={() => setEditing(null)}
+                                        className="flex-1 border border-gray-300 text-gray-600 py-3 text-sm rounded-sm hover:bg-gray-50 smooth-transition"
+                                    >
+                                        {t.profile.cancel}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

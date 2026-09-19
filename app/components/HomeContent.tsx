@@ -221,7 +221,7 @@ export default function HomeContent({ bestSellers, categories: saleorCategories,
                     {/* Decorative Pattern Icon */}
                     <div className="mb-6 flex justify-center">
                         <Image
-                            src="/image2.png"
+                            src="/image3.png"
                             alt="Separator"
                             width={24}
                             height={24}

@@ -25,7 +25,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
     const [checkoutId, setCheckoutId] = useState<string | null>(null);
     const [items, setItems] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [subtotal, setSubtotal] = useState<{ amount: number; currency: string } | null>(null);
     const [shippingPrice, setShippingPrice] = useState<{ amount: number; currency: string } | null>(null);
     const [totalPrice, setTotalPrice] = useState<{ amount: number; currency: string } | null>(null);
@@ -105,7 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             }
         } catch (error) {
             console.error('Failed to add to cart:', error);
-            alert('Failed to add to cart. Please try again.');
+            throw error;
         } finally {
             setLoading(false);
         }

@@ -168,7 +168,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             if (def.slug) definitions.set(def.slug, def);
         }
 
-        const attrGroups = new Map<string, { attributeSlug: string; label: string; values: Map<string, string> }>();
+        const attrGroups = new Map<string, { attributeSlug: string; label: string; values: Map<string, string>; seen: Set<string> }>();
 
         // Seed groups + full value lists from Saleor definitions (only for attributes
         // present on the listed products, so filters stay relevant to the category).
@@ -192,7 +192,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 if (!valueSlug) continue;
                 values.set(valueSlug, choice.translation?.name || choice.name);
             }
-            attrGroups.set(slug, { attributeSlug: slug, label, values });
+            attrGroups.set(slug, { attributeSlug: slug, label, values, seen: new Set() });
         }
 
         // Merge in values found on products (covers values missing from definitions)
@@ -210,7 +210,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                 const attrName = attr.attribute.translation?.name || attr.attribute.name;
 
                 if (!attrGroups.has(slug)) {
-                    attrGroups.set(slug, { attributeSlug: slug, label: attrName, values: new Map() });
+                    attrGroups.set(slug, { attributeSlug: slug, label: attrName, values: new Map(), seen: new Set() });
                 }
                 const group = attrGroups.get(slug)!;
                 if (group.label === attr.attribute.name && attr.attribute.translation?.name) {
@@ -235,6 +235,7 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
                         // ("attribute:bag-color:#000000") and matching works on split values.
                         const valueSlug = isColor ? namePart : (val.slug || namePart);
                         if (!valueSlug) continue;
+                        group.seen.add(valueSlug);
                         if (!group.values.has(valueSlug)) {
                             group.values.set(valueSlug, labelPart);
                         } else if (group.values.get(valueSlug) === namePart && val.translation?.name) {
@@ -245,17 +246,22 @@ export default function FilterSidebar({ mobileFiltersOpen, setMobileFiltersOpen,
             }
         }
 
+        // Data-driven schema: keep only the values actually present on the listed
+        // (scoped) products, so every option is selectable and no group renders
+        // with an empty list. Definition-only choices that no current product
+        // carries are intentionally omitted.
         // Display order: Bag Type ("نوع الحقيبة") first, everything else keeps
-        // its natural order. Attributes only appear when used by the listed
-        // products, so this only affects categories that actually have it.
+        // its natural order.
         const PRIORITY_SLUGS = ['bag-type'];
         return Array.from(attrGroups.values()).map(g => ({
             attributeSlug: g.attributeSlug,
             // Display-only: hide the organizational prefix ("Bag Carry" -> "Carry").
             // Slugs are untouched, so filtering keeps working.
             label: displayAttributeName({ name: g.label, slug: g.attributeSlug }),
-            values: Array.from(g.values.entries()).map(([value, label]) => ({ value, label })),
-        })).sort((a, b) => {
+            values: Array.from(g.values.entries())
+                .filter(([value]) => g.seen.has(value))
+                .map(([value, label]) => ({ value, label })),
+        })).filter(g => g.values.length > 0).sort((a, b) => {
             const pa = PRIORITY_SLUGS.indexOf(a.attributeSlug);
             const pb = PRIORITY_SLUGS.indexOf(b.attributeSlug);
             if (pa === -1 && pb === -1) return 0;

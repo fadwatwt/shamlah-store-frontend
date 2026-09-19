@@ -54,7 +54,8 @@ export default function NewsletterSignup() {
                     onChange={(e) => { setEmail(e.target.value); if (state !== 'idle' && state !== 'loading') setState('idle'); }}
                     placeholder={n.placeholder}
                     aria-label={n.placeholder}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm text-left placeholder:text-gray-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-white"
+                    style={{ textAlign: !email && dir === 'rtl' ? 'right' : 'left' }}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-sm text-sm placeholder:text-gray-400 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-white"
                 />
                 <button
                     type="submit"
