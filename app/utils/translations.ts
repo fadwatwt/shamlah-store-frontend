@@ -409,6 +409,11 @@ export const translations = {
             placeOrder: 'إتمام الطلب',
             back: 'رجوع',
             securePayment: 'جميع المعلومات مشفرة باستخدام SSL. نحن لا نخزن تفاصيل بطاقتك الائتمانية.',
+            termsRequired: 'يرجى الموافقة على الشروط والأحكام وسياسة الاستبدال والإرجاع أولاً',
+            termsAgree: 'أوافق على ',
+            termsLink: 'الشروط والأحكام',
+            termsAnd: ' و ',
+            returnsLink: 'سياسة الاستبدال والإرجاع',
             shippingMethods: {
                 standard: 'شحن قياسي',
                 express: 'شحن سريع',
@@ -701,6 +706,11 @@ export const translations = {
             placeOrder: 'Place Order',
             back: 'Back',
             securePayment: 'All information is SSL encrypted. We do not store credit card details.',
+            termsRequired: 'Please accept the Terms & Conditions and Return Policy first',
+            termsAgree: 'I agree to the ',
+            termsLink: 'Terms & Conditions',
+            termsAnd: ' and the ',
+            returnsLink: 'Return Policy',
             shippingMethods: {
                 standard: 'Standard Shipping',
                 express: 'Express Shipping',

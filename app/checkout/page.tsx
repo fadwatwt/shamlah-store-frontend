@@ -17,6 +17,18 @@ import {
 } from '@/lib/queries/cart';
 import { getShopShippingMethods } from '@/lib/queries/shop';
 import { getCookieChannel } from '@/lib/saleor/channel-mapping';
+import { countryDial, normalizePhoneForCountry } from '@/lib/utils/countries';
+
+// Example hint per country for the phone placeholder (fallback: +dial ...).
+const PHONE_EXAMPLES: Record<string, string> = {
+    PS: '+970 59X XXX XXX',
+    TR: '+90 5XX XXX XX XX',
+};
+function phonePlaceholder(countryCode: string): string {
+    if (PHONE_EXAMPLES[countryCode]) return PHONE_EXAMPLES[countryCode];
+    const dial = countryDial(countryCode);
+    return dial ? `+${dial} ...` : '';
+}
 import { LoadingOverlay } from '../components/LoadingSpinner';
 import Header from '../components/Header';
 import { loadStripe } from '@stripe/stripe-js';
@@ -141,7 +153,7 @@ const countries = [
     { code: 'RW', names: { en: 'Rwanda', ar: 'رواندا' } },
 ];
 
-const translateCheckoutError = (message: string, language: string): string => {
+const translateCheckoutError = (message: string, language: string, countryCode = 'PS'): string => {
     if (language === 'ar') {
         const stockMatch = message.match(/Could not add items (.*?)\. Only (\d+) remaining in stock\./i);
         if (stockMatch) {
@@ -153,7 +165,19 @@ const translateCheckoutError = (message: string, language: string): string => {
         if (message.includes('is not a valid phone number')) {
             const phoneMatch = message.match(/'(.*?)'/);
             const phoneNum = phoneMatch ? phoneMatch[1] : '';
-            return `رقم الهاتف '${phoneNum}' غير صالح لدولة فلسطين. يرجى التأكد من كتابة الرقم بشكل صحيح (مثال: 59XXXXXXX).`;
+            const entry = countries.find((x) => x.code === countryCode);
+            const countryLabel = entry?.names.ar || countryCode;
+            const dial = countryDial(countryCode);
+            const hint = dial
+                ? `أدخل الرقم بالصيغة الدولية (+${dial}) أو الرقم المحلي بدون الصفر الأول.`
+                : 'تأكد من كتابة الرقم بالصيغة الدولية الصحيحة.';
+            return `رقم الهاتف '${phoneNum}' غير صالح لدولة ${countryLabel}. ${hint}`;
+        }
+
+        if (message.includes('not valid for the address')) {
+            const entry = countries.find((x) => x.code === countryCode);
+            const countryLabel = entry?.names.ar || countryCode;
+            return `الرمز البريدي غير صالح لدولة ${countryLabel} — تحقق من الصيغة الصحيحة لهذه الدولة أو اتركه فارغاً.`;
         }
 
         if (message.includes('Required field')) {
@@ -167,6 +191,7 @@ function StripePaymentForm({
     checkoutId,
     total,
     language,
+    t,
     loading,
     setLoading,
     onBack,
@@ -176,6 +201,7 @@ function StripePaymentForm({
     checkoutId: string;
     total: number;
     language: string;
+    t: { checkout: { termsRequired: string; termsAgree: string; termsLink: string; termsAnd: string; returnsLink: string } };
     loading: boolean;
     setLoading: (loading: boolean) => void;
     onBack: () => void;
@@ -190,9 +216,7 @@ function StripePaymentForm({
             return;
         }
         if (!termsAccepted) {
-            alert(language === 'ar'
-                ? 'يرجى الموافقة على الشروط والأحكام وسياسة الاستبدال والإرجاع أولاً'
-                : 'Please accept the Terms & Conditions and Return Policy first');
+            alert(t.checkout.termsRequired);
             return;
         }
 
@@ -269,6 +293,27 @@ function StripePaymentForm({
                 {language === 'ar' ? 'الدفع آمن ومشفر عبر Stripe' : 'Secure payment powered by Stripe'}
             </p>
 
+            {/* Terms & returns acceptance — above the confirm button so users
+                notice it before paying. Required by payment gateways.
+                Links open in a new tab so the checkout/payment state is kept. */}
+            <label className="flex items-start gap-2.5 cursor-pointer select-none rounded-lg border border-gray-200 bg-gray-50/60 px-4 py-3">
+                <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => onTermsChange(e.target.checked)}
+                    className="mt-1 w-4 h-4 shrink-0 accent-accent"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                    {t.checkout.termsAgree}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
+                        {t.checkout.termsLink}
+                    </a>
+                    {t.checkout.termsAnd}
+                    <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
+                        {t.checkout.returnsLink}
+                    </a>
+                </span>
+            </label>
             <div className="flex flex-col md:flex-row gap-4 mt-8">
                 <button
                     type="button"
@@ -286,26 +331,6 @@ function StripePaymentForm({
                     {loading ? (language === 'ar' ? 'جاري المعالجة...' : 'Processing...') : (language === 'ar' ? 'تأكيد الدفع' : 'Confirm Payment')}
                 </button>
             </div>
-            {/* Terms & returns acceptance — required by payment gateways.
-                Links open in a new tab so the checkout/payment state is kept. */}
-            <label className="mt-4 flex items-start gap-2.5 cursor-pointer select-none">
-                <input
-                    type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => onTermsChange(e.target.checked)}
-                    className="mt-1 w-4 h-4 shrink-0 accent-accent"
-                />
-                <span className="text-xs text-gray-500 leading-relaxed">
-                    {language === 'ar' ? 'أوافق على ' : 'I agree to the '}
-                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
-                        {language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
-                    </a>
-                    {language === 'ar' ? ' و ' : ' and the '}
-                    <a href="/returns" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline font-medium">
-                        {language === 'ar' ? 'سياسة الاستبدال والإرجاع' : 'Return Policy'}
-                    </a>
-                </span>
-            </label>
         </div>
     );
 }
@@ -411,9 +436,13 @@ export default function CheckoutPage() {
                     lastName: formData.fullName.split(' ').slice(1).join(' ') || 'User',
                     streetAddress1: formData.address,
                     city: formData.city,
-                    postalCode: formData.zipCode || '00000',
+                    // Omit postalCode when blank: Saleor validates its FORMAT
+                    // per country, so a fake '00000' fails for countries like GB.
+                    postalCode: formData.zipCode.trim() || undefined,
                     country: formData.country as any || 'PS',
-                    phone: formData.phone
+                    // Send E.164 for the SELECTED country so Saleor's
+                    // per-country validation accepts it (e.g. +90… for TR).
+                    phone: normalizePhoneForCountry(formData.phone, formData.country)
                 };
 
                 const data = await updateCheckoutShippingAddress(checkoutToken, addressInput);
@@ -421,11 +450,11 @@ export default function CheckoutPage() {
                     console.error('Shipping address update errors:', data.checkoutShippingAddressUpdate.errors);
                     const newErrors: Record<string, string> = {};
                     data.checkoutShippingAddressUpdate.errors.forEach((err: any) => {
-                        const translatedMsg = translateCheckoutError(err.message, language);
+                        const translatedMsg = translateCheckoutError(err.message, language, formData.country);
                         if (err.field === 'phone') {
                             newErrors.phone = translatedMsg;
                         } else if (err.field === 'postalCode') {
-                            newErrors.zipCode = language === 'ar' ? 'الرمز البريدي غير صالح' : 'Invalid postal code';
+                            newErrors.zipCode = translatedMsg;
                         } else if (err.field === 'city') {
                             newErrors.city = language === 'ar' ? 'المدينة غير صالحة' : 'Invalid city';
                         } else if (err.field === 'streetAddress1') {
@@ -669,6 +698,13 @@ export default function CheckoutPage() {
                         )}
                     </div>
 
+                    {/* Server-side errors that don't map to a field (shown above the form) */}
+                    {showErrors && errors.general && (
+                        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 text-sm px-4 py-3 rounded-lg">
+                            {errors.general}
+                        </div>
+                    )}
+
                     {step === 1 ? (
                         <>
                             {/* Shipping Form Header */}
@@ -697,69 +733,26 @@ export default function CheckoutPage() {
                                     {showErrors && errors.fullName && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.fullName}</p>}
                                 </div>
 
-                                {/* Email & Phone */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.email} *</label>
-                                        <div className="relative group">
-                                            <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex items-center text-gray-400 group-focus-within:text-accent transition-colors`}>
-                                                <MailIcon />
-                                            </div>
-                                            <input
-                                                type="email"
-                                                placeholder={language === 'ar' ? "عنوان بريدك الإلكتروني" : "Your email address"}
-                                                className={`w-full bg-[#fdfdfd] border ${showErrors && errors.email ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 ${dir === 'rtl' ? 'pr-12 pl-4' : 'pl-12 pr-4'} focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            />
-                                        </div>
-                                        {showErrors && errors.email && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.email}</p>}
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.phone} *</label>
-                                        <div className="relative group">
-                                            <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex items-center text-gray-400 group-focus-within:text-accent transition-colors`}>
-                                                <PhoneIcon />
-                                            </div>
-                                            <input
-                                                type="tel"
-                                                placeholder="+970 XXX XXX XXX"
-                                                className={`w-full bg-[#fdfdfd] border ${showErrors && errors.phone ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 ${dir === 'rtl' ? 'pr-12 pl-4' : 'pl-12 pr-4'} focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
-                                                dir="ltr"
-                                                value={formData.phone}
-                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            />
-                                        </div>
-                                        {showErrors && errors.phone && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.phone}</p>}
-                                    </div>
-                                </div>
-
-                                {/* Address */}
+                                {/* Email */}
                                 <div className="space-y-2">
-                                    <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.address} *</label>
-                                    <input
-                                        type="text"
-                                        placeholder={language === 'ar' ? "الشارع، رقم المبنى، الحي" : "Street, Building No., District"}
-                                        className={`w-full bg-[#fdfdfd] border ${showErrors && errors.address ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
-                                        value={formData.address}
-                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                    />
-                                    {showErrors && errors.address && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.address}</p>}
+                                    <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.email} *</label>
+                                    <div className="relative group">
+                                        <div className={`absolute inset-y-0 ${dir === 'rtl' ? 'right-4' : 'left-4'} flex items-center text-gray-400 group-focus-within:text-accent transition-colors`}>
+                                            <MailIcon />
+                                        </div>
+                                        <input
+                                            type="email"
+                                            placeholder={language === 'ar' ? "عنوان بريدك الإلكتروني" : "Your email address"}
+                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.email ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 ${dir === 'rtl' ? 'pr-12 pl-4' : 'pl-12 pr-4'} focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
+                                            value={formData.email}
+                                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        />
+                                    </div>
+                                    {showErrors && errors.email && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.email}</p>}
                                 </div>
 
-                                {/* City, Country, Zip */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.city} *</label>
-                                        <input
-                                            type="text"
-                                            placeholder={language === 'ar' ? "المدينة" : "City"}
-                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.city ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
-                                            value={formData.city}
-                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                                        />
-                                        {showErrors && errors.city && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.city}</p>}
-                                    </div>
+                                {/* Country & Phone — country first: the dial prefix follows it */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.country} *</label>
                                         <div className="relative">
@@ -783,14 +776,68 @@ export default function CheckoutPage() {
                                         {showErrors && errors.country && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.country}</p>}
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.phone} *</label>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 right-4 flex items-center text-gray-400 group-focus-within:text-accent transition-colors">
+                                                <PhoneIcon />
+                                            </div>
+                                            {/* Country dial prefix follows the selected country */}
+                                            {countryDial(formData.country) && (
+                                                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                    <span dir="ltr" className="text-sm font-bold text-accent">
+                                                        +{countryDial(formData.country)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <input
+                                                type="tel"
+                                                placeholder={phonePlaceholder(formData.country)}
+                                                className={`w-full bg-[#fdfdfd] border ${showErrors && errors.phone ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 ${countryDial(formData.country) ? 'pl-20' : 'pl-4'} pr-12 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
+                                                dir="ltr"
+                                                value={formData.phone}
+                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                            />
+                                        </div>
+                                        {showErrors && errors.phone && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.phone}</p>}
+                                    </div>
+                                </div>
+
+                                {/* Address */}
+                                <div className="space-y-2">
+                                    <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.address} *</label>
+                                    <input
+                                        type="text"
+                                        placeholder={language === 'ar' ? "الشارع، رقم المبنى، الحي" : "Street, Building No., District"}
+                                        className={`w-full bg-[#fdfdfd] border ${showErrors && errors.address ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                    />
+                                    {showErrors && errors.address && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.address}</p>}
+                                </div>
+
+                                {/* City, Zip */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.city} *</label>
+                                        <input
+                                            type="text"
+                                            placeholder={language === 'ar' ? "المدينة" : "City"}
+                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.city ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
+                                            value={formData.city}
+                                            onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                                        />
+                                        {showErrors && errors.city && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.city}</p>}
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-[13px] font-medium text-gray-600 block">{t.checkout.postalCode}</label>
                                         <input
                                             type="text"
                                             placeholder="12345"
-                                            className="w-full bg-[#fdfdfd] border border-gray-200 rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all"
+                                            className={`w-full bg-[#fdfdfd] border ${showErrors && errors.zipCode ? 'border-red-400' : 'border-gray-200'} rounded-lg py-4 px-5 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all`}
                                             value={formData.zipCode}
                                             onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
                                         />
+                                        {showErrors && errors.zipCode && <p className="text-[11px] text-red-500 ml-1 mt-1">{errors.zipCode}</p>}
                                     </div>
                                 </div>
 
@@ -855,6 +902,7 @@ export default function CheckoutPage() {
                                                     checkoutId={checkoutId}
                                                     total={total}
                                                     language={language}
+                                                    t={t}
                                                     loading={loading}
                                                     setLoading={setLoading}
                                                     onBack={handleBack}
