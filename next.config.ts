@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  images: {
+  // standalone لا يغيّر سلوك الويب إطلاقاً — فقط ينتج نسخة خفيفة قابلة للتضمين في تطبيق الدسكتوب
+  output: 'standalone',  images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
