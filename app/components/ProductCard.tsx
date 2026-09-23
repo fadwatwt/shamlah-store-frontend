@@ -72,28 +72,27 @@ export default function ProductCard({
         e.preventDefault();
         e.stopPropagation();
 
-        // precise variant identification logic as used in ProductDetails
-        let variantIdToUse: string | undefined;
-
-        if (variants && variants.length > 0) {
-            variantIdToUse = variants[0].id;
+        // إذا كان للمنتج أكثر من variant واحد فهذا يعني وجود خصائص يجب على
+        // المستخدم اختيارها (مقاس/لون...) — ننتقل لصفحة المنتج بدل إضافة أول variant خطأً.
+        // الإضافة السريعة فقط عندما يكون variant وحيد (لا يوجد ما يُختار).
+        if (!variants || variants.length !== 1) {
+            // Soft-navigate to product page if selection is needed (or no variant found) — preserves layout state
+            router.push(`/products/${id}`);
+            return;
         }
 
-        if (variantIdToUse) {
-            if (addingRef.current) return;
-            addingRef.current = true;
-            setAddingToCart(true);
-            try {
-                await addToCart(variantIdToUse, 1);
-            } catch (err) {
-                console.error('Failed to add to cart', err);
-            } finally {
-                addingRef.current = false;
-                setAddingToCart(false);
-            }
-        } else {
-            // Fallback: Soft-navigate to product page if no variant found — preserves layout state
-            router.push(`/products/${id}`);
+        const variantIdToUse = variants[0].id;
+
+        if (addingRef.current) return;
+        addingRef.current = true;
+        setAddingToCart(true);
+        try {
+            await addToCart(variantIdToUse, 1);
+        } catch (err) {
+            console.error('Failed to add to cart', err);
+        } finally {
+            addingRef.current = false;
+            setAddingToCart(false);
         }
     };
 
