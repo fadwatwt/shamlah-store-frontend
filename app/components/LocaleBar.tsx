@@ -14,6 +14,12 @@ const CURRENCIES = [
 ];
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
+function setCookieChannel(nextChannel: string) {
+    if (typeof document !== 'undefined') {
+        document.cookie = `saleor-channel=${nextChannel};path=/;max-age=${COOKIE_MAX_AGE};samesite=lax`;
+    }
+}
+
 // Slim utility strip (like most stores): manual language + currency override.
 // The automatic geo system keeps working internally — middleware sets the
 // cookie on first display when it's absent; a manual pick persists and wins.
@@ -54,7 +60,7 @@ export default function LocaleBar() {
     const pickCurrency = (nextChannel: string) => {
         setOpenMenu(null);
         if (nextChannel === channel) return;
-        document.cookie = `saleor-channel=${nextChannel};path=/;max-age=${COOKIE_MAX_AGE};samesite=lax`;
+        setCookieChannel(nextChannel);
         setChannel(nextChannel);
         // Saleor checkouts are channel-locked: a USD checkout cannot take EUR
         // lines, so the old cart must restart in the new currency.

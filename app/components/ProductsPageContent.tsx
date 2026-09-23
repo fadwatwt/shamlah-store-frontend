@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Category, SaleorAttribute } from '../../lib/types/saleor';
+import { Category, SaleorAttribute, ProductVariant } from '../../lib/types/saleor';
 import { parsePriceParam } from '../../lib/utils/formatPrice';
 import ProductCard from './ProductCard';
 import FilterSidebar from './FilterSidebar';
@@ -25,6 +25,7 @@ interface Product {
         attribute: { name: string; slug?: string; translation?: { name?: string } | null };
         values: Array<{ name: string; slug?: string; translation?: { name?: string } | null }>;
     }>;
+    variants?: ProductVariant[];
 }
 
 interface ProductsPageContentProps {

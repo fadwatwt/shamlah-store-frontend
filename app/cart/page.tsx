@@ -75,9 +75,16 @@ export default function CartPage() {
                                                 {/* Quantity Selector */}
                                                 <div className="flex items-center border border-gray-200 rounded-lg">
                                                     <button
-                                                        onClick={() => updateLineQuantity(line.id, line.quantity - 1)}
+                                                        onClick={() => {
+                                                            if (line.quantity <= 1) {
+                                                                removeFromCart(line.id);
+                                                            } else {
+                                                                updateLineQuantity(line.id, line.quantity - 1);
+                                                            }
+                                                        }}
                                                         className={`w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-50 ${dir === 'rtl' ? 'rounded-r-lg' : 'rounded-l-lg'}`}
                                                         disabled={loading}
+                                                        aria-label="Decrease quantity"
                                                     >
                                                         -
                                                     </button>

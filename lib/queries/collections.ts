@@ -104,6 +104,27 @@ const GET_COLLECTION_BY_SLUG = (languageCode: string) => `
               name
               sku
               quantityAvailable
+              translation(languageCode: ${languageCode}) {
+                id
+                name
+              }
+              attributes {
+                attribute {
+                  name
+                  slug
+                  translation(languageCode: ${languageCode}) {
+                    name
+                  }
+                }
+                values {
+                  name
+                  slug
+                  value
+                  translation(languageCode: ${languageCode}) {
+                    name
+                  }
+                }
+              }
               preorder {
                 endDate
               }

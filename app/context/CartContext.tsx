@@ -113,6 +113,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     const updateLineQuantity = async (lineId: string, quantity: number) => {
         if (!checkoutToken) return;
+        if (quantity <= 0) {
+            return removeFromCart(lineId);
+        }
         setLoading(true);
         try {
             const data = await updateCheckoutLines(checkoutToken, [{ lineId, quantity }]);

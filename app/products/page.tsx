@@ -38,6 +38,7 @@ function transformSaleorProduct(product: Product) {
         quantityAvailable,
         isPreorder,
         attributes: product.attributes,
+        variants: product.variants,
         categorySlug: product.category?.slug || null,
         categoryName: product.category?.translation?.name || product.category?.name || null,
     };

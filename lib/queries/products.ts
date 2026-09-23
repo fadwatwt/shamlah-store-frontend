@@ -39,6 +39,27 @@ export const GET_PRODUCTS = `
             name
             sku
             quantityAvailable
+            translation(languageCode: $languageCode) {
+              id
+              name
+            }
+            attributes {
+              attribute {
+                name
+                slug
+                translation(languageCode: $languageCode) {
+                  name
+                }
+              }
+              values {
+                name
+                slug
+                value
+                translation(languageCode: $languageCode) {
+                  name
+                }
+              }
+            }
             preorder {
               endDate
             }
@@ -348,6 +369,27 @@ export const GET_PRODUCTS_BY_CATEGORY = (languageCode: string) => `
             name
             sku
             quantityAvailable
+            translation(languageCode: ${languageCode}) {
+              id
+              name
+            }
+            attributes {
+              attribute {
+                name
+                slug
+                translation(languageCode: ${languageCode}) {
+                  name
+                }
+              }
+              values {
+                name
+                slug
+                value
+                translation(languageCode: ${languageCode}) {
+                  name
+                }
+              }
+            }
             preorder {
               endDate
             }
@@ -455,6 +497,27 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
             name
             sku
             quantityAvailable
+            translation(languageCode: $languageCode) {
+              id
+              name
+            }
+            attributes {
+              attribute {
+                name
+                slug
+                translation(languageCode: $languageCode) {
+                  name
+                }
+              }
+              values {
+                name
+                slug
+                value
+                translation(languageCode: $languageCode) {
+                  name
+                }
+              }
+            }
             preorder {
               endDate
             }
@@ -464,16 +527,6 @@ export const GET_PRODUCTS_BY_CATEGORY_IDS = `
                   amount
                   currency
                 }
-              }
-            }
-            attributes {
-              attribute {
-                name
-                slug
-              }
-              values {
-                name
-                value
               }
             }
           }

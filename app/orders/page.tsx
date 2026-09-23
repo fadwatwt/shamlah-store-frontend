@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getUserOrders } from '@/lib/queries/auth';
+import { formatPrice, AR_LATN_LOCALE } from '@/lib/utils/formatPrice';
 
 function mapSaleorStatus(s: string): 'delivered' | 'shipped' | 'processing' {
     const v = (s || '').toUpperCase();
@@ -20,6 +21,7 @@ export default function OrdersPage() {
     const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const locale = language === 'ar' ? AR_LATN_LOCALE : 'en-US';
 
     useEffect(() => {
         if (!isAuthenticated) { setLoading(false); return; }
@@ -135,7 +137,7 @@ export default function OrdersPage() {
                                     </div>
                                     <div>
                                         <span className="block text-gray-400 mb-1">{t.orders.total}</span>
-                                        <span className="font-bold text-accent font-english" dir="ltr">{order.total} {order.currency}</span>
+                                        <span className="font-bold text-accent font-english" dir="ltr">{formatPrice(order.total, order.currency, locale)}</span>
                                     </div>
                                 </div>
 
@@ -193,11 +195,11 @@ export default function OrdersPage() {
                                                 <div className="flex-grow">
                                                     <div className="flex justify-between mb-1">
                                                         <h4 className="font-bold text-gray-800">{item.name}</h4>
-                                                        <span className="font-bold text-accent font-english" dir="ltr">${item.price * item.quantity}</span>
+                                                        <span className="font-bold text-accent font-english" dir="ltr">{formatPrice(item.price * item.quantity, order.currency, locale)}</span>
                                                     </div>
                                                     <p className="text-gray-500 text-sm">{language === 'ar' ? 'الكمية' : 'Quantity'}: <span className="font-english">{item.quantity}</span></p>
 
-                                                    <p className="text-gray-400 text-xs font-english" dir="ltr">${item.price} / Item</p>
+                                                    <p className="text-gray-400 text-xs font-english" dir="ltr">{formatPrice(item.price, order.currency, locale)} / {language === 'ar' ? 'قطعة' : 'Item'}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -206,15 +208,15 @@ export default function OrdersPage() {
                                     <div className="bg-gray-50 rounded-lg p-6 space-y-3">
                                         <div className="flex justify-between text-gray-600 text-sm">
                                             <span>{t.cart.subtotal}</span>
-                                            <span className="font-english" dir="ltr">${order.subtotal}</span>
+                                            <span className="font-english" dir="ltr">{formatPrice(order.subtotal, order.currency, locale)}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600 text-sm">
                                             <span>{t.cart.shipping}</span>
-                                            <span className="font-english" dir="ltr">${order.shipping}</span>
+                                            <span className="font-english" dir="ltr">{formatPrice(order.shipping, order.currency, locale)}</span>
                                         </div>
                                         <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-lg text-accent">
                                             <span>{t.cart.total}</span>
-                                            <span className="font-english" dir="ltr">${order.total}</span>
+                                            <span className="font-english" dir="ltr">{formatPrice(order.total, order.currency, locale)}</span>
                                         </div>
                                     </div>
                                 </div>
